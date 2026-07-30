@@ -53,6 +53,10 @@ const applySnapFilter = (ctx, w, h, filter) => {
       ctx.beginPath(); ctx.ellipse(cx - 60, cy - 100, 25, 55, -0.3, 0, Math.PI * 2); ctx.fill();
       ctx.beginPath(); ctx.ellipse(cx + 60, cy - 100, 25, 55, 0.3, 0, Math.PI * 2); ctx.fill();
       break;
+    case 'spatial_aura':
+      ctx.strokeStyle = '#8b5cf6'; ctx.shadowColor = '#8b5cf6'; ctx.shadowBlur = 30; ctx.lineWidth = 3;
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(cx, cy, 90 + i * 22, 0, Math.PI * 2); ctx.stroke(); }
+      break;
     default: break;
   }
   ctx.shadowBlur = 0;
@@ -60,12 +64,13 @@ const applySnapFilter = (ctx, w, h, filter) => {
 
 const FILTERS = [
   { id: 'none', name: 'No Filter', icon: '🚫' },
-  { id: 'neon_bunny', name: 'Neon Bunny', icon: '🐰' },
-  { id: 'cyber_visor', name: 'Cyber Visor', icon: '🥽' },
-  { id: 'golden_crown', name: 'Gold Crown', icon: '👑' },
+  { id: 'neon_bunny', name: 'Glowing Bunny Ears', icon: '🐰' },
+  { id: 'cyber_visor', name: 'Neon Cyberpunk Visor', icon: '🥽' },
+  { id: 'golden_crown', name: 'Golden Imperial Crown', icon: '👑' },
   { id: 'spooky_neon', name: 'Spooky Glow', icon: '👻' },
   { id: 'dreamy_sparkle', name: 'Dreamy Sparkle', icon: '✨' },
-  { id: 'dog_ears', name: 'Puppy Ears', icon: '🐶' }
+  { id: 'dog_ears', name: 'Puppy Ears', icon: '🐶' },
+  { id: 'spatial_aura', name: 'Spatial Aura', icon: '🌌' }
 ];
 
 function ARVideoPanel({ filter, label, showFilterStrip, onChangeFilter, className }) {
@@ -227,7 +232,9 @@ const GAMES = [
   { id: 'riddle_escape', name: 'Riddle Escape Room', icon: '🗝️', desc: 'Solve riddles to unlock the exit', mechanic: 'puzzle' },
   { id: 'trivia_bomb', name: 'Trivia Time Bomb', icon: '💣', desc: 'Answer fast, pass the bomb before it pops', mechanic: 'bomb' },
   { id: 'vibe_paintball', name: 'Vibe Arena Paintball', icon: '🎯', desc: 'Shooter-lite party arena', mechanic: 'arena' },
-  { id: 'become_a_star', name: 'Become a Star', icon: '⭐', desc: 'The flagship singing competition', mechanic: 'sing' }
+  { id: 'become_a_star', name: 'Become a Star', icon: '⭐', desc: 'The flagship singing competition', mechanic: 'sing' },
+  { id: 'flirt_me', name: 'Flirt Me (18+)', icon: '💋', desc: 'Spin, pair up, and trade playful flirty prompts', mechanic: 'flirt' },
+  { id: 'qa_arena', name: 'Q&A Arena', icon: '🃏', desc: 'Truth or Dare, Deep Secrets, Would You Rather & Quiz Battles', mechanic: 'qa' }
 ];
 
 // A representative sample catalog — production would connect to a full licensed
@@ -268,6 +275,46 @@ const GIFT_CATALOG = [
   { id: 'crown', name: 'Crown', icon: '👑', cost: 100 },
   { id: 'rocket', name: 'Rocket', icon: '🚀', cost: 250 },
   { id: 'diamond', name: 'Diamond', icon: '💎', cost: 500 }
+];
+
+// Flirt Me — kept playful/PG-13 rather than explicit, so it's viable for real app-store review.
+const FLIRT_PROMPTS = [
+  "Compliment your match's smile without using the word 'smile'.",
+  "Give your best (worst) cheesy pickup line and let them rate it 1-10.",
+  "Describe your ideal first date in exactly 6 words.",
+  "Send a playful wink reaction and explain what it means.",
+  "What's your most embarrassing celebrity crush?",
+  "Rate your flirting skills honestly, then prove it.",
+  "Compliment someone using only emojis.",
+  "What's the corniest thing you've ever said to a crush?"
+];
+const QA_CATEGORIES = {
+  'Truth or Dare': ['Truth: What\'s a secret you\'ve never told anyone here?', 'Dare: Do your best impression of another player.'],
+  'Deep Secrets': ['What\'s something you\'ve never admitted out loud?', 'What\'s a fear you rarely talk about?'],
+  'Would You Rather': ['Would you rather always know when someone is lying, or always get away with lying?', 'Would you rather lose all your money or all your photos?'],
+  'Personality Quiz': ['Are you more of a planner or a "figure it out later" person?', 'Do you recharge alone or with people?']
+};
+const ZODIAC_SIGNS = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
+const ZODIAC_TRAITS = {
+  Aries: 'Bold Aries', Taurus: 'Grounded Taurus', Gemini: 'Curious Gemini', Cancer: 'Empathetic Cancer',
+  Leo: 'Passionate Leo', Virgo: 'Thoughtful Virgo', Libra: 'Balanced Libra', Scorpio: 'Passionate Scorpio',
+  Sagittarius: 'Adventurous Sagittarius', Capricorn: 'Ambitious Capricorn', Aquarius: 'Visionary Aquarius', Pisces: 'Dreamy Pisces'
+};
+const AVATAR_OPTIONS = {
+  face: ['🙂', '😊', '😎', '🥰', '🤨'],
+  hair: ['Short', 'Long', 'Curly', 'Buzzed', 'Braided'],
+  outfit: ['Streetwear', 'Formal', 'Cyberpunk', 'Cozy', 'Glam'],
+  aura: ['None', 'Neon Pink', 'Golden', 'Cyan Glow', 'Violet Mist']
+};
+const REACTIONS = [
+  { id: 'heart', icon: '❤️', label: 'Love' },
+  { id: 'hug', icon: '🤗', label: 'Hug' },
+  { id: 'kiss', icon: '😘', label: 'Kiss' },
+  { id: 'mindblown', icon: '🤯', label: 'Mind-Blown' },
+  { id: 'fire', icon: '🔥', label: 'Fire' },
+  { id: 'slap', icon: '🖐️', label: 'Slap' },
+  { id: 'shoe', icon: '👞', label: 'Shoe Throw' },
+  { id: 'curse', icon: '🤬', label: 'Censored Curse' }
 ];
 
 export default function App() {
@@ -351,6 +398,9 @@ export default function App() {
   const [lensSaturate, setLensSaturate] = useState(100);
   const [lensStickers, setLensStickers] = useState([]);
   const [lensText, setLensText] = useState('');
+  const [lensBeauty, setLensBeauty] = useState(0);
+  const [lensWarmth, setLensWarmth] = useState(0);
+  const [lensBackdrop, setLensBackdrop] = useState('none');
   const lensCanvasRef = useRef(null);
   const lensImgRef = useRef(null);
 
@@ -359,7 +409,8 @@ export default function App() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     canvas.width = 500; canvas.height = 500;
-    ctx.filter = `brightness(${lensBrightness}%) contrast(${lensContrast}%) saturate(${lensSaturate}%)`;
+    const warmthDeg = lensWarmth * 1.2;
+    ctx.filter = `brightness(${lensBrightness}%) contrast(${lensContrast}%) saturate(${lensSaturate}%) blur(${lensBeauty * 0.06}px) sepia(${Math.max(0, lensWarmth)}%) hue-rotate(-${warmthDeg}deg)`;
     if (lensImgRef.current) {
       ctx.drawImage(lensImgRef.current, 0, 0, canvas.width, canvas.height);
     } else {
@@ -369,10 +420,11 @@ export default function App() {
       ctx.textAlign = 'left';
     }
     ctx.filter = 'none';
+    if (lensBackdrop !== 'none') { ctx.fillStyle = lensBackdrop; ctx.globalAlpha = 0.18; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
     applySnapFilter(ctx, canvas.width, canvas.height, lensFilter);
     lensStickers.forEach((s) => { ctx.font = '48px serif'; ctx.fillText(s.emoji, s.x, s.y); });
     if (lensText) { ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.shadowColor = '#000'; ctx.shadowBlur = 6; ctx.fillText(lensText, 24, canvas.height - 24); ctx.shadowBlur = 0; }
-  }, [lensImage, lensFilter, lensBrightness, lensContrast, lensSaturate, lensStickers, lensText]);
+  }, [lensImage, lensFilter, lensBrightness, lensContrast, lensSaturate, lensStickers, lensText, lensBeauty, lensWarmth, lensBackdrop]);
 
   const handleLensUpload = (e) => {
     const file = e.target.files[0]; if (!file) return;
@@ -447,6 +499,40 @@ export default function App() {
   const [starCallMode, setStarCallMode] = useState('video');
   const [starGifts, setStarGifts] = useState([]);
   const [starScore, setStarScore] = useState(null);
+  const [starLanguage, setStarLanguage] = useState('All');
+  const [starDuration, setStarDuration] = useState(60);
+  const [starIntermission, setStarIntermission] = useState(0);
+  const [starCanResing, setStarCanResing] = useState(true);
+  const [voiceRefs, setVoiceRefs] = useState([]);
+
+  useEffect(() => {
+    if (starStage !== 'intermission' || starIntermission <= 0) return;
+    const t = setInterval(() => setStarIntermission((s) => Math.max(0, s - 1)), 1000);
+    return () => clearInterval(t);
+  }, [starStage, starIntermission]);
+
+  // ---------------- Flirt Me ----------------
+  const [flirtWheelAngle, setFlirtWheelAngle] = useState(0);
+  const [flirtSpinning, setFlirtSpinning] = useState(false);
+  const [flirtTarget, setFlirtTarget] = useState(null);
+  const [flirtPrompt, setFlirtPrompt] = useState(null);
+
+  // ---------------- Q&A Arena ----------------
+  const [qaCategory, setQaCategory] = useState('Truth or Dare');
+  const [qaCardFlipped, setQaCardFlipped] = useState(false);
+  const [qaCurrentPrompt, setQaCurrentPrompt] = useState(QA_CATEGORIES['Truth or Dare'][0]);
+  const [qaPoll, setQaPoll] = useState({ yes: 6, no: 3 });
+
+  // ---------------- Avatar Studio ----------------
+  const [avatar, setAvatar] = useState({ face: '🙂', hair: 'Short', outfit: 'Streetwear', aura: 'None' });
+
+  // ---------------- Dating Hub ----------------
+  const [datingProfile, setDatingProfile] = useState({
+    zodiac: 'Leo', relationshipGoal: 'Long-term', lifestyleTags: ['#Fitness', '#Foodie'],
+    bio: 'Adventure-seeker who loves deep conversations and karaoke nights.',
+    privacy: { zodiac: true, goal: true, bio: true }
+  });
+  const [zodiacCompareSign, setZodiacCompareSign] = useState('Scorpio');
 
   // ---------------- Communities & Feed ----------------
   const [communities, setCommunities] = useState([
@@ -458,8 +544,8 @@ export default function App() {
   const [newCommunity, setNewCommunity] = useState({ name: '', type: 'public' });
 
   const [feedPosts, setFeedPosts] = useState([
-    { id: 'f1', user: 'Luna', text: 'Best VibeStage night ever with @Alex Vance and @KiraX 🎉', likes: 42, comments: 6, mentions: ['Alex Vance', 'KiraX'] },
-    { id: 'f2', user: 'DevSam', text: 'New Vibe Match Compatibility score: 91%! 💘', likes: 18, comments: 2, mentions: [] }
+    { id: 'f1', user: 'Luna', text: 'Best VibeStage night ever with @Alex Vance and @KiraX 🎉', comments: 6, mentions: ['Alex Vance', 'KiraX'], reactions: { heart: 24, hug: 5, fire: 9 } },
+    { id: 'f2', user: 'DevSam', text: 'New Vibe Match Compatibility score: 91%! 💘', comments: 2, mentions: [], reactions: { heart: 12, mindblown: 4 } }
   ]);
   const [postDraft, setPostDraft] = useState('');
   const [postMentions, setPostMentions] = useState([]);
@@ -569,9 +655,10 @@ export default function App() {
   const toggleMention = (name) => setPostMentions((m) => m.includes(name) ? m.filter((n) => n !== name) : [...m, name]);
   const submitPost = () => {
     if (!postDraft.trim()) return;
-    setFeedPosts((p) => [{ id: 'f' + Date.now(), user: userProfile.name, text: postDraft, likes: 0, comments: 0, mentions: postMentions }, ...p]);
+    setFeedPosts((p) => [{ id: 'f' + Date.now(), user: userProfile.name, text: postDraft, comments: 0, mentions: postMentions, reactions: {} }, ...p]);
     setPostDraft(''); setPostMentions([]);
   };
+  const addPostReaction = (postId, reactionId) => setFeedPosts((fp) => fp.map((x) => x.id === postId ? { ...x, reactions: { ...x.reactions, [reactionId]: (x.reactions[reactionId] || 0) + 1 } } : x));
 
   const assignRelationship = (user, tag) => setUserProfile((p) => ({ ...p, relationships: [...p.relationships.filter((r) => r.user !== user), { user, tag }] }));
 
@@ -718,8 +805,10 @@ export default function App() {
             {[
               { id: 'vibestage', label: 'VibeStage Circles', icon: Radio },
               { id: 'omegle', label: 'VibeRoulette 1-on-1', icon: RefreshCw, highlight: true },
-              { id: 'games', label: '34 VibeSpace Games', icon: Gamepad2, badge: 'PLAY' },
+              { id: 'games', label: '36 VibeSpace Games', icon: Gamepad2, badge: 'PLAY' },
               { id: 'lens', label: 'AR Lens Studio', icon: Camera },
+              { id: 'avatar', label: 'Avatar Studio', icon: Smile, badge: 'NEW' },
+              { id: 'dating', label: 'Dating Hub', icon: Heart, badge: 'NEW' },
               { id: 'feed', label: 'Feed & Posts', icon: Rss },
               { id: 'communities', label: 'Communities', icon: Users },
               { id: 'vault', label: 'Vibe Vault', icon: HardDrive, highlight: true },
@@ -761,8 +850,10 @@ export default function App() {
             <h2 className="text-xl font-bold text-slate-100 tracking-tight">
               {activeTab === 'vibestage' && 'VibeStage Circles'}
               {activeTab === 'omegle' && 'VibeRoulette 1-on-1'}
-              {activeTab === 'games' && '34 VibeSpace Games'}
+              {activeTab === 'games' && '36 VibeSpace Games'}
               {activeTab === 'lens' && 'AR Lens Studio'}
+              {activeTab === 'avatar' && 'Avatar Studio'}
+              {activeTab === 'dating' && 'Dating Hub & Compatibility'}
               {activeTab === 'feed' && 'Feed & Posts'}
               {activeTab === 'communities' && 'Communities'}
               {activeTab === 'vault' && 'Vibe Vault'}
@@ -893,16 +984,77 @@ export default function App() {
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Brightness</span><input type="range" min="50" max="150" value={lensBrightness} onChange={(e) => setLensBrightness(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Contrast</span><input type="range" min="50" max="150" value={lensContrast} onChange={(e) => setLensContrast(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Saturation</span><input type="range" min="0" max="200" value={lensSaturate} onChange={(e) => setLensSaturate(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Beauty</span><input type="range" min="0" max="100" value={lensBeauty} onChange={(e) => setLensBeauty(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Warmth</span><input type="range" min="0" max="60" value={lensWarmth} onChange={(e) => setLensWarmth(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                   </div>
                   <div className="flex gap-2 items-center"><Type className="w-3.5 h-3.5 text-slate-400" /><input value={lensText} onChange={(e) => setLensText(e.target.value)} placeholder="Add caption text" className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs" /></div>
                   <div className="flex gap-1.5 flex-wrap">{['✨', '🔥', '💖', '👑', '🐰', '🎉'].map((e) => (<button key={e} onClick={() => addLensSticker(e)} className="bg-slate-800 hover:bg-purple-600/40 text-lg px-2 py-1 rounded-lg">{e}</button>))}</div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-slate-500">Backdrop tint</p>
+                    <div className="flex gap-1.5">{['none', '#a855f7', '#ec4899', '#f59e0b', '#06b6d4'].map((c) => (<button key={c} onClick={() => setLensBackdrop(c)} className={`w-6 h-6 rounded-full border-2 ${lensBackdrop === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c === 'none' ? '#1e293b' : c }} />))}</div>
+                  </div>
                   <div className="flex gap-2">
-                    <button onClick={() => { setLensStickers([]); setLensText(''); }} className="flex-1 bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Reset Edits</button>
+                    <button onClick={() => { setLensStickers([]); setLensText(''); setLensBeauty(0); setLensWarmth(0); setLensBackdrop('none'); }} className="flex-1 bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Reset Edits</button>
                     <button onClick={saveLensToVault} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Save to Vault</button>
                   </div>
                   <p className="text-[10px] text-slate-500 text-center">More layers, adjustments, and sticker packs than the usual lens apps — all reusable across VibeRoulette, dating matches, games, and stages.</p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* AVATAR STUDIO */}
+        {activeTab === 'avatar' && (
+          <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex items-center justify-center">
+                <div className={`relative w-48 h-48 rounded-full flex items-center justify-center text-7xl ${avatar.aura !== 'None' ? 'ring-8' : ''} ${avatar.aura === 'Neon Pink' ? 'ring-pink-500' : avatar.aura === 'Golden' ? 'ring-amber-400' : avatar.aura === 'Cyan Glow' ? 'ring-cyan-400' : avatar.aura === 'Violet Mist' ? 'ring-purple-500' : ''}`} style={{ background: 'radial-gradient(circle, #312e81, #1e1b4b)' }}>
+                  {avatar.face}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Face Expression</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.face.map((f) => (<button key={f} onClick={() => setAvatar({ ...avatar, face: f })} className={`text-2xl p-2 rounded-xl border ${avatar.face === f ? 'bg-purple-600/30 border-purple-500' : 'bg-slate-800 border-slate-700'}`}>{f}</button>))}</div></div>
+                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Hair Style</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.hair.map((h) => (<button key={h} onClick={() => setAvatar({ ...avatar, hair: h })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.hair === h ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{h}</button>))}</div></div>
+                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Outfit</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.outfit.map((o) => (<button key={o} onClick={() => setAvatar({ ...avatar, outfit: o })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.outfit === o ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{o}</button>))}</div></div>
+                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Glowing Aura</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.aura.map((a) => (<button key={a} onClick={() => setAvatar({ ...avatar, aura: a })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.aura === a ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{a}</button>))}</div></div>
+                <button onClick={() => fireToast('Avatar saved to your profile')} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Save Avatar</button>
+                <p className="text-[10px] text-slate-500">This is a stylized 2D layered avatar. A true sculpted 3D avatar (like Ready Player Me) needs a real 3D engine integration — this demonstrates the full customization flow.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* DATING HUB */}
+        {activeTab === 'dating' && (
+          <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+              <h3 className="font-bold text-base text-slate-100">Your Dating Profile</h3>
+              <div className="flex items-center justify-between"><label className="text-xs text-slate-400">Zodiac Sign</label><select value={datingProfile.zodiac} onChange={(e) => setDatingProfile({ ...datingProfile, zodiac: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">{ZODIAC_SIGNS.map((z) => <option key={z}>{z}</option>)}</select></div>
+              <div className="flex items-center justify-between"><label className="text-xs text-slate-400">Relationship Goal</label><select value={datingProfile.relationshipGoal} onChange={(e) => setDatingProfile({ ...datingProfile, relationshipGoal: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">{['Long-term', 'Something casual', 'Not sure yet', 'Friends first'].map((g) => <option key={g}>{g}</option>)}</select></div>
+              <textarea value={datingProfile.bio} onChange={(e) => setDatingProfile({ ...datingProfile, bio: e.target.value })} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm h-20" />
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <p className="text-[10px] font-bold text-slate-500 uppercase">Privacy — make each field public or hidden</p>
+                {['zodiac', 'goal', 'bio'].map((f) => (
+                  <div key={f} className="flex justify-between items-center"><span className="text-xs text-slate-400 capitalize">{f}</span><button onClick={() => setDatingProfile({ ...datingProfile, privacy: { ...datingProfile.privacy, [f]: !datingProfile.privacy[f] } })} className={`text-[10px] font-bold px-3 py-1 rounded-lg border ${datingProfile.privacy[f] ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' : 'bg-slate-800 text-slate-400 border-slate-700'}`}>{datingProfile.privacy[f] ? 'Public' : 'Hidden'}</button></div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+              <h3 className="font-bold text-base text-slate-100">Zodiac Compatibility</h3>
+              <div className="flex items-center gap-3"><span className="text-xs text-slate-400">Compare with:</span><select value={zodiacCompareSign} onChange={(e) => setZodiacCompareSign(e.target.value)} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">{ZODIAC_SIGNS.map((z) => <option key={z}>{z}</option>)}</select></div>
+              {(() => {
+                const idxA = ZODIAC_SIGNS.indexOf(datingProfile.zodiac), idxB = ZODIAC_SIGNS.indexOf(zodiacCompareSign);
+                const score = 100 - (Math.abs(idxA - idxB) * 6) % 45;
+                return (
+                  <div className="text-center space-y-2">
+                    <p className="text-4xl font-black text-pink-400">{score}%</p>
+                    <p className="text-xs text-slate-400">{ZODIAC_TRAITS[datingProfile.zodiac]} + {ZODIAC_TRAITS[zodiacCompareSign]}</p>
+                    <span className="inline-block bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold px-3 py-1 rounded-xl">{ZODIAC_TRAITS[datingProfile.zodiac]}</span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
         )}
@@ -921,7 +1073,13 @@ export default function App() {
                   <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
                   <p className="text-sm text-slate-300">{p.text}</p>
                   {p.mentions.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {p.mentions.map((m) => `@${m}`).join(', ')}</p>}
-                  <div className="flex gap-4 text-xs text-slate-500"><button onClick={() => setFeedPosts((fp) => fp.map((x) => x.id === p.id ? { ...x, likes: x.likes + 1 } : x))} className="flex items-center gap-1"><Heart className="w-3.5 h-3.5" /> {p.likes}</button><span className="flex items-center gap-1"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</span></div>
+                  {Object.keys(p.reactions).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
+                  )}
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addPostReaction(p.id, r.id)} className="text-base hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                    <span className="flex items-center gap-1 text-xs text-slate-500"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1111,16 +1269,19 @@ export default function App() {
                 <div className="space-y-4">
                   {starStage === 'pick' && (
                     <div className="space-y-3">
-                      <h4 className="font-bold text-sm text-center text-slate-100">Pick your song — Bollywood, Hollywood & more</h4>
+                      <h4 className="font-bold text-sm text-center text-slate-100">Star Stage — pick your song</h4>
+                      <div className="flex gap-1.5 flex-wrap justify-center">{['All', 'Bollywood', 'Hollywood/Pop'].map((l) => (<button key={l} onClick={() => setStarLanguage(l)} className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${starLanguage === l ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{l}</button>))}</div>
                       <div className="flex items-center gap-2 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2"><Search className="w-4 h-4 text-slate-500" /><input value={starSongSearch} onChange={(e) => setStarSongSearch(e.target.value)} placeholder="Search 1,000s of songs (sample library shown)" className="flex-1 bg-transparent text-xs text-slate-200 outline-none" /></div>
-                      <div className="max-h-64 overflow-y-auto space-y-1.5">
-                        {filteredSongs.map((s) => (<button key={s.title} onClick={() => { setStarSelectedSong(s); setStarStage('lobby'); }} className="w-full flex justify-between items-center bg-slate-950 hover:bg-purple-600/20 border border-slate-800 rounded-xl px-3 py-2 text-left"><span className="text-xs font-bold text-slate-200">{s.title}</span><span className="text-[10px] text-slate-500">{s.genre}</span></button>))}
+                      <div className="max-h-56 overflow-y-auto space-y-1.5">
+                        {filteredSongs.filter((s) => starLanguage === 'All' || s.genre === starLanguage).map((s) => (<button key={s.title} onClick={() => { setStarSelectedSong(s); setStarStage('lobby'); }} className="w-full flex justify-between items-center bg-slate-950 hover:bg-purple-600/20 border border-slate-800 rounded-xl px-3 py-2 text-left"><span className="text-xs font-bold text-slate-200">{s.title}</span><span className="text-[10px] text-slate-500">{s.genre}</span></button>))}
                       </div>
+                      <div className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"><span className="text-[10px] text-slate-500">Turn length</span><div className="flex gap-1.5">{[30, 60, 90].map((d) => (<button key={d} onClick={() => setStarDuration(d)} className={`text-[10px] font-bold px-2 py-1 rounded-lg border ${starDuration === d ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{d}s</button>))}</div></div>
+                      <div className="flex items-center gap-2 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2"><Mic2 className="w-3.5 h-3.5 text-slate-500" /><button onClick={() => { setVoiceRefs((v) => [...v, { id: Date.now(), label: `Voice reference for ${starSelectedSong ? starSelectedSong.title : 'a song'}` }]); fireToast('Voice reference clip saved to your catalog'); }} className="text-[10px] font-bold text-purple-300">Record a voice reference clip</button></div>
                     </div>
                   )}
                   {starStage === 'lobby' && starSelectedSong && (
                     <div className="text-center space-y-3">
-                      <p className="text-sm font-bold text-slate-100">Performing: {starSelectedSong.title}</p>
+                      <p className="text-sm font-bold text-slate-100">Performing: {starSelectedSong.title} ({starDuration}s)</p>
                       <button onClick={() => setStarCallMode(starCallMode === 'video' ? 'voice' : 'video')} className="bg-slate-800 border border-slate-700 text-xs font-bold px-4 py-2 rounded-xl">{starCallMode === 'video' ? '📹 Video Chat before you go on' : '🎙️ Voice Only before you go on'}</button>
                       <p className="text-[10px] text-slate-500">Friends can join the pre-show chat, send messages, or hype you up before you perform.</p>
                       <button onClick={() => setStarStage('performing')} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl w-full">Go On Stage</button>
@@ -1128,20 +1289,67 @@ export default function App() {
                   )}
                   {starStage === 'performing' && (
                     <div className="text-center space-y-3">
+                      <p className="text-[10px] text-slate-500">🔇 Audience mics auto-muted while you're on stage</p>
                       <p className="text-sm font-bold text-pink-300 animate-pulse">🎤 Now performing: {starSelectedSong.title}</p>
+                      <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 overflow-hidden h-12 flex items-center"><p className="text-xs text-cyan-300 whitespace-nowrap animate-pulse">♪ Synchronized lyrics scroll here for you and the audience ♪</p></div>
                       <div className="flex justify-center gap-1">{[...Array(8)].map((_, i) => (<div key={i} className="w-1.5 bg-purple-500 rounded-full animate-pulse" style={{ height: `${20 + Math.random() * 40}px` }} />))}</div>
                       <div className="flex justify-center gap-1.5 flex-wrap">{GIFT_CATALOG.map((g) => (<button key={g.id} onClick={() => buyAndSendGift(g, 'star')} className="bg-slate-800 text-[10px] font-bold px-2 py-1.5 rounded-lg text-slate-300">{g.icon} {g.cost}</button>))}</div>
                       {starGifts.length > 0 && <div className="flex flex-wrap justify-center gap-1.5">{starGifts.map((g) => (<span key={g.id} className="text-[10px] font-bold bg-purple-600/30 border border-purple-500/40 text-purple-200 px-2 py-1 rounded-lg">{g.label}</span>))}</div>}
-                      <button onClick={finishPerformance} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl w-full">Finish Performance</button>
+                      <button onClick={() => { finishPerformance(); setStarIntermission(15); setStarStage('intermission'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl w-full">Finish Performance</button>
                     </div>
                   )}
-                  {starStage === 'result' && (
-                    <div className="text-center space-y-2">
+                  {starStage === 'intermission' && (
+                    <div className="text-center space-y-3">
                       <p className="text-4xl font-black text-amber-300">{starScore}/100</p>
-                      <p className="text-xs text-slate-400">Judged on pitch, energy, and crowd gifts received</p>
-                      <button onClick={() => setStarStage('pick')} className="bg-slate-800 text-xs font-bold px-6 py-2.5 rounded-xl">Sing Another Song</button>
+                      <p className="text-xs text-slate-400">15-second appreciation window — send reactions, gifts, or banter</p>
+                      <p className="text-2xl font-black text-slate-200">{starIntermission}s</p>
+                      <div className="flex justify-center gap-1.5 flex-wrap">{GIFT_CATALOG.slice(0, 3).map((g) => (<button key={g.id} onClick={() => buyAndSendGift(g, 'star')} className="bg-slate-800 text-[10px] font-bold px-2 py-1.5 rounded-lg text-slate-300">{g.icon} {g.cost}</button>))}</div>
+                      <div className="flex gap-2">
+                        {starCanResing && <button onClick={() => { setStarCanResing(false); setStarStage('performing'); }} className="flex-1 bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Apply to Re-sing & Beat the Score</button>}
+                        <button onClick={() => setStarStage('pick')} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Next Singer</button>
+                      </div>
                     </div>
                   )}
+                </div>
+              )}
+              {activeGame.id === 'flirt_me' && (
+                <div className="text-center space-y-4">
+                  <p className="text-[10px] text-amber-400 font-bold uppercase">18+ • Playful & consensual only</p>
+                  <div className="w-44 h-44 rounded-full border-8 border-pink-500 border-t-purple-500 border-b-rose-400 mx-auto flex items-center justify-center text-4xl shadow-2xl transition-transform duration-1000" style={{ transform: `rotate(${flirtWheelAngle}deg)` }}>💋</div>
+                  {flirtTarget && <p className="text-xs font-bold text-pink-300">Paired with {flirtTarget}</p>}
+                  {flirtPrompt && <p className="bg-pink-900/30 border border-pink-500/40 p-3 rounded-xl text-xs font-bold text-slate-200 max-w-md mx-auto">{flirtPrompt}</p>}
+                  <button onClick={() => {
+                    if (flirtSpinning) return;
+                    setFlirtSpinning(true);
+                    setFlirtWheelAngle((a) => a + 1440 + Math.floor(Math.random() * 360));
+                    setTimeout(() => {
+                      setFlirtTarget(MOCK_USERS[Math.floor(Math.random() * MOCK_USERS.length)]);
+                      setFlirtPrompt(FLIRT_PROMPTS[Math.floor(Math.random() * FLIRT_PROMPTS.length)]);
+                      setFlirtSpinning(false);
+                      announceWinner('Flirt Me');
+                    }, 1800);
+                  }} disabled={flirtSpinning} className="bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold text-xs px-8 py-3 rounded-xl">{flirtSpinning ? 'Spinning...' : 'Spin the Bottle'}</button>
+                  <div className="flex justify-center gap-2">{['😊 Blush', '🔥 Flame', '💥 Heart Burst'].map((r) => (<button key={r} onClick={() => sendReaction(r.split(' ')[0])} className="bg-slate-800 text-[10px] font-bold px-2 py-1.5 rounded-lg text-slate-300">{r}</button>))}</div>
+                </div>
+              )}
+              {activeGame.id === 'qa_arena' && (
+                <div className="space-y-4">
+                  <div className="flex gap-1.5 flex-wrap justify-center">{Object.keys(QA_CATEGORIES).map((c) => (<button key={c} onClick={() => { setQaCategory(c); setQaCurrentPrompt(QA_CATEGORIES[c][0]); setQaCardFlipped(false); }} className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border ${qaCategory === c ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{c}</button>))}</div>
+                  <div className="flex justify-center">
+                    <button onClick={() => setQaCardFlipped(!qaCardFlipped)} className="w-64 h-40 rounded-2xl border-2 border-purple-500/40 flex items-center justify-center text-center p-4 transition-transform duration-500" style={{ transformStyle: 'preserve-3d', transform: qaCardFlipped ? 'rotateY(180deg)' : 'rotateY(0)', background: qaCardFlipped ? 'linear-gradient(135deg,#7c3aed,#db2777)' : '#0f172a' }}>
+                      <p className="text-xs font-bold text-white" style={{ transform: qaCardFlipped ? 'rotateY(180deg)' : 'none' }}>{qaCardFlipped ? qaCurrentPrompt : 'Tap to flip the card'}</p>
+                    </button>
+                  </div>
+                  <div className="flex justify-center gap-2">
+                    <button onClick={() => { const opts = QA_CATEGORIES[qaCategory]; setQaCurrentPrompt(opts[Math.floor(Math.random() * opts.length)]); setQaCardFlipped(true); announceWinner('Q&A Arena'); }} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl">Next Card</button>
+                  </div>
+                  <div className="max-w-xs mx-auto space-y-1.5">
+                    <p className="text-[10px] text-slate-500 text-center">Audience poll: agree with the answer?</p>
+                    <div className="flex gap-2">
+                      <button onClick={() => setQaPoll((p) => ({ ...p, yes: p.yes + 1 }))} className="flex-1 h-3 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{ width: `${(qaPoll.yes / (qaPoll.yes + qaPoll.no)) * 100}%` }} /></button>
+                      <button onClick={() => setQaPoll((p) => ({ ...p, no: p.no + 1 }))} className="flex-1 h-3 bg-slate-800 rounded-full overflow-hidden"><div className="h-full bg-rose-500" style={{ width: `${(qaPoll.no / (qaPoll.yes + qaPoll.no)) * 100}%` }} /></button>
+                    </div>
+                  </div>
                 </div>
               )}
               {['shadow_chase', 'hide_and_vibe', 'neon_maze', 'parkour_dash', 'zombie_outbreak', 'sky_battle', 'vault_heist', 'mystery_manor', 'racing_rivals', 'sumo_bounce', 'werewolf_midnight', 'spy_vs_spy', 'musical_chairs', 'freeze_dance', 'balloon_pop', 'tower_stack', 'riddle_escape', 'trivia_bomb', 'vibe_paintball'].includes(activeGame.id) && (
