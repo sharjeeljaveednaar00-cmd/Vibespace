@@ -351,15 +351,31 @@ export default function App() {
     if (!error) applyServerProfile(data);
   };
 
+  const loadFeed = async () => {
+    setFeedLoading(true);
+    const { data: posts, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(50);
+    if (error || !posts) { setFeedLoading(false); return; }
+    const postIds = posts.map((p) => p.id);
+    const { data: reactions } = await supabase.from('post_reactions').select('post_id, reaction').in('post_id', postIds.length ? postIds : ['00000000-0000-0000-0000-000000000000']);
+    const counted = posts.map((p) => {
+      const mine = (reactions || []).filter((r) => r.post_id === p.id);
+      const reactionCounts = {};
+      mine.forEach((r) => { reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1; });
+      return { id: p.id, user: p.author_name, text: p.text, comments: p.comments, mentions: p.mentions || [], reactions: reactionCounts };
+    });
+    setFeedPosts(counted);
+    setFeedLoading(false);
+  };
+
   // Restore session on load, and react to login/logout/OAuth-redirect events.
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      if (s) { loadProfile(s.user.id); setAuthStep('done'); }
+      if (s) { loadProfile(s.user.id); loadFeed(); setAuthStep('done'); }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (s) { loadProfile(s.user.id); setAuthStep('done'); }
+      if (s) { loadProfile(s.user.id); loadFeed(); setAuthStep('done'); }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -641,10 +657,8 @@ export default function App() {
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
   const [newCommunity, setNewCommunity] = useState({ name: '', type: 'public' });
 
-  const [feedPosts, setFeedPosts] = useState([
-    { id: 'f1', user: 'Luna', text: 'Best VibeStage night ever with @Alex Vance and @KiraX 🎉', comments: 6, mentions: ['Alex Vance', 'KiraX'], reactions: { heart: 24, hug: 5, fire: 9 } },
-    { id: 'f2', user: 'DevSam', text: 'New Vibe Match Compatibility score: 91%! 💘', comments: 2, mentions: [], reactions: { heart: 12, mindblown: 4 } }
-  ]);
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [feedLoading, setFeedLoading] = useState(false);
   const [postDraft, setPostDraft] = useState('');
   const [postMentions, setPostMentions] = useState([]);
 
@@ -751,12 +765,29 @@ export default function App() {
   };
 
   const toggleMention = (name) => setPostMentions((m) => m.includes(name) ? m.filter((n) => n !== name) : [...m, name]);
-  const submitPost = () => {
-    if (!postDraft.trim()) return;
-    setFeedPosts((p) => [{ id: 'f' + Date.now(), user: userProfile.name, text: postDraft, comments: 0, mentions: postMentions, reactions: {} }, ...p]);
+  const submitPost = async () => {
+    if (!postDraft.trim() || !session) return;
+    const text = postDraft;
+    const mentions = postMentions;
     setPostDraft(''); setPostMentions([]);
+    const { data, error } = await supabase
+      .from('posts')
+      .insert({ author_id: session.user.id, author_name: userProfile.name, text, mentions })
+      .select()
+      .single();
+    if (error) { fireToast('Could not post — try again'); return; }
+    setFeedPosts((p) => [{ id: data.id, user: data.author_name, text: data.text, comments: 0, mentions: data.mentions || [], reactions: {} }, ...p]);
   };
-  const addPostReaction = (postId, reactionId) => setFeedPosts((fp) => fp.map((x) => x.id === postId ? { ...x, reactions: { ...x.reactions, [reactionId]: (x.reactions[reactionId] || 0) + 1 } } : x));
+  const addPostReaction = async (postId, reactionId) => {
+    if (!session) return;
+    // Optimistic update first, since the UI expects an instant response.
+    setFeedPosts((fp) => fp.map((x) => x.id === postId ? { ...x, reactions: { ...x.reactions, [reactionId]: (x.reactions[reactionId] || 0) + 1 } } : x));
+    const { error } = await supabase.from('post_reactions').insert({ post_id: postId, user_id: session.user.id, reaction: reactionId });
+    if (error) {
+      // Most likely they already reacted with this emoji (unique constraint) — revert the optimistic bump.
+      setFeedPosts((fp) => fp.map((x) => x.id === postId ? { ...x, reactions: { ...x.reactions, [reactionId]: Math.max(0, (x.reactions[reactionId] || 1) - 1) } } : x));
+    }
+  };
 
   const assignRelationship = (user, tag) => setUserProfile((p) => ({ ...p, relationships: [...p.relationships.filter((r) => r.user !== user), { user, tag }] }));
 
@@ -1181,6 +1212,8 @@ export default function App() {
               <button onClick={submitPost} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
             </div>
             <div className="space-y-4">
+              {feedLoading && <p className="text-xs text-slate-500 text-center">Loading feed...</p>}
+              {!feedLoading && feedPosts.length === 0 && <p className="text-xs text-slate-500 text-center">No posts yet — be the first to share something.</p>}
               {feedPosts.map((p) => (
                 <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
