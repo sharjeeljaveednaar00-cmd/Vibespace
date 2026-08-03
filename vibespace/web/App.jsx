@@ -659,6 +659,12 @@ export default function App() {
 
   const [feedPosts, setFeedPosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
+  const [openCommentsFor, setOpenCommentsFor] = useState(null);
+  const [commentsByPost, setCommentsByPost] = useState({});
+  const [commentDraft, setCommentDraft] = useState('');
+  const [commentMentions, setCommentMentions] = useState([]);
+  const [commentUploading, setCommentUploading] = useState(false);
+  const commentFileRef = useRef(null);
   const [postDraft, setPostDraft] = useState('');
   const [postMentions, setPostMentions] = useState([]);
 
@@ -786,6 +792,83 @@ export default function App() {
     if (error) {
       // Most likely they already reacted with this emoji (unique constraint) — revert the optimistic bump.
       setFeedPosts((fp) => fp.map((x) => x.id === postId ? { ...x, reactions: { ...x.reactions, [reactionId]: Math.max(0, (x.reactions[reactionId] || 1) - 1) } } : x));
+    }
+  };
+
+  // ---------------- Comments (mentions, reactions, media) ----------------
+  const loadComments = async (postId) => {
+    const { data: comments, error } = await supabase.from('comments').select('*').eq('post_id', postId).order('created_at', { ascending: true });
+    if (error || !comments) return;
+    const commentIds = comments.map((c) => c.id);
+    const { data: reactions } = await supabase.from('comment_reactions').select('comment_id, reaction').in('comment_id', commentIds.length ? commentIds : ['00000000-0000-0000-0000-000000000000']);
+    const withReactions = comments.map((c) => {
+      const mine = (reactions || []).filter((r) => r.comment_id === c.id);
+      const reactionCounts = {};
+      mine.forEach((r) => { reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1; });
+      return { ...c, reactionCounts };
+    });
+    setCommentsByPost((m) => ({ ...m, [postId]: withReactions }));
+  };
+
+  const toggleCommentsFor = (postId) => {
+    if (openCommentsFor === postId) { setOpenCommentsFor(null); return; }
+    setOpenCommentsFor(postId);
+    if (!commentsByPost[postId]) loadComments(postId);
+  };
+
+  const toggleCommentMention = (name) => setCommentMentions((m) => m.includes(name) ? m.filter((n) => n !== name) : [...m, name]);
+
+  const handleCommentFileSelect = async (e, postId) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !session) return;
+    if (file.size > 25 * 1024 * 1024) { fireToast('File too big — 25MB max'); return; }
+    const mediaType = file.type.startsWith('video') ? 'video' : file.type === 'image/gif' ? 'gif' : 'image';
+    setCommentUploading(true);
+    const path = `${session.user.id}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from('comment-media').upload(path, file);
+    if (uploadError) { fireToast('Upload failed — try again'); setCommentUploading(false); return; }
+    const { data: urlData } = supabase.storage.from('comment-media').getPublicUrl(path);
+    await submitComment(postId, { mediaUrl: urlData.publicUrl, mediaType });
+    setCommentUploading(false);
+  };
+
+  const submitComment = async (postId, media) => {
+    if (!session) return;
+    if (!commentDraft.trim() && !media) return;
+    const text = commentDraft;
+    const mentions = commentMentions;
+    setCommentDraft(''); setCommentMentions([]);
+    const { data, error } = await supabase
+      .from('comments')
+      .insert({
+        post_id: postId,
+        author_id: session.user.id,
+        author_name: userProfile.name,
+        text,
+        mentions,
+        media_url: media?.mediaUrl || null,
+        media_type: media?.mediaType || null,
+      })
+      .select()
+      .single();
+    if (error) { fireToast('Could not comment — try again'); return; }
+    setCommentsByPost((m) => ({ ...m, [postId]: [...(m[postId] || []), { ...data, reactionCounts: {} }] }));
+    setFeedPosts((fp) => fp.map((p) => p.id === postId ? { ...p, comments: p.comments + 1 } : p));
+  };
+
+  const addCommentReaction = async (postId, commentId, reactionId) => {
+    if (!session) return;
+    setCommentsByPost((m) => ({
+      ...m,
+      [postId]: (m[postId] || []).map((c) => c.id === commentId ? { ...c, reactionCounts: { ...c.reactionCounts, [reactionId]: (c.reactionCounts[reactionId] || 0) + 1 } } : c),
+    }));
+    const { error } = await supabase.from('comment_reactions').insert({ comment_id: commentId, user_id: session.user.id, reaction: reactionId });
+    if (error) {
+      setCommentsByPost((m) => ({
+        ...m,
+        [postId]: (m[postId] || []).map((c) => c.id === commentId ? { ...c, reactionCounts: { ...c.reactionCounts, [reactionId]: Math.max(0, (c.reactionCounts[reactionId] || 1) - 1) } } : c),
+      }));
     }
   };
 
@@ -1224,8 +1307,37 @@ export default function App() {
                   )}
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addPostReaction(p.id, r.id)} className="text-base hover:scale-125 transition-transform">{r.icon}</button>))}</div>
-                    <span className="flex items-center gap-1 text-xs text-slate-500"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</span>
+                    <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</button>
                   </div>
+
+                  {openCommentsFor === p.id && (
+                    <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+                      {(commentsByPost[p.id] || []).map((c) => (
+                        <div key={c.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+                          <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">{c.author_name[0]}</div><span className="text-xs font-bold text-slate-200">{c.author_name}</span></div>
+                          {c.text && <p className="text-xs text-slate-300">{c.text}</p>}
+                          {c.mentions?.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {c.mentions.map((m) => `@${m}`).join(', ')}</p>}
+                          {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
+                          {c.media_url && c.media_type !== 'video' && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
+                          {Object.keys(c.reactionCounts || {}).length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">{Object.entries(c.reactionCounts).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[9px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
+                          )}
+                          <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                        </div>
+                      ))}
+                      {(commentsByPost[p.id] || []).length === 0 && <p className="text-[10px] text-slate-500">No comments yet — say something.</p>}
+
+                      <div className="space-y-2">
+                        <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs h-14" />
+                        <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-3.5 h-3.5 text-slate-500" />{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleCommentMention(u)} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border ${commentMentions.includes(u) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>@{u}</button>))}</div>
+                        <input ref={commentFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleCommentFileSelect(e, p.id)} />
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => commentFileRef.current?.click()} disabled={commentUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2 rounded-xl disabled:opacity-50">{commentUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                          <button onClick={() => submitComment(p.id)} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold py-2 rounded-xl">Comment</button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

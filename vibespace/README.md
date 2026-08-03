@@ -4,8 +4,8 @@
 Auth (including Google sign-in) and the user's profile now run through **Supabase** instead of the earlier custom Express backend — since you already set up Google OAuth there, it's the simpler path (hosted auth + Postgres in one place). The `backend/` folder (Express + SQLite) is no longer used for auth; keep it only if you want a separate API for future non-auth features, or delete it.
 
 ## What's real vs. mock right now
-- **Real:** email/password signup & login, Google sign-in, sessions, and the logged-in user's name/bio/coins/level/XP — all in Supabase (Postgres).
-- **Still mock (phase 2):** feed posts, matches/VibeRoulette, gifts, memory vault, games, communities. These currently reset on refresh — each can be moved into its own Supabase table the same way `profiles` was. Ask to wire up a specific feature next.
+- **Real:** email/password signup & login, Google sign-in, sessions, the logged-in user's name/bio/coins/level/XP, feed posts + reactions, and comments (with @mentions, per-comment reactions, and photo/GIF-file/video attachments) — all in Supabase (Postgres + Storage).
+- **Still mock (phase 3):** matches/VibeRoulette, gifts, memory vault, games, communities. These currently reset on refresh — each can be moved into its own Supabase table the same way posts/comments were. Ask to wire up a specific feature next.
 - **Not implemented:** Facebook/TikTok OAuth (disabled placeholders), the "liveness check" is still a cosmetic progress bar, not real face verification.
 
 ## 1. Set up Supabase (one-time)
@@ -55,7 +55,8 @@ From there you build/run it in Xcode or Android Studio like any native app, and 
 **Before shipping to app stores:** point `VITE_API_URL` at your deployed (not localhost) backend and rebuild — a phone can't reach your laptop's localhost.
 
 ## Next steps (in priority order)
-1. Wire feed posts, matches, gifts, and vault memories to their own Supabase tables (same pattern as `profiles`).
-2. Facebook/TikTok OAuth — enable each provider in Supabase and register a developer app with that platform.
-3. Replace the cosmetic liveness check with a real provider (e.g. a face-verification API) if you want actual bot/catfish prevention — this matters a lot for a dating product.
-4. Decide whether to keep or remove `backend/` — everything it did for auth is now handled by Supabase.
+1. Wire matches/VibeRoulette, gifts, and vault memories to their own Supabase tables (same pattern as posts/comments).
+2. Real GIF search (e.g. Giphy/Tenor API) instead of file-upload-only GIFs — needs an API key from that provider.
+3. Facebook/TikTok OAuth — enable each provider in Supabase and register a developer app with that platform.
+4. Replace the cosmetic liveness check with a real provider (e.g. a face-verification API) if you want actual bot/catfish prevention — this matters a lot for a dating product.
+5. Decide whether to keep or remove `backend/` — everything it did for auth is now handled by Supabase.
