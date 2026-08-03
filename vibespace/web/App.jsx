@@ -452,6 +452,10 @@ export default function App() {
   }, [verifyProgress, authStep]);
 
   const [activeTab, setActiveTab] = useState('vibestage');
+
+  useEffect(() => {
+    if (activeTab === 'dating' && session) { loadDiscoverQueue(); loadMatches(); }
+  }, [activeTab, session]);
   const [activeRoom, setActiveRoom] = useState(null);
   const [activeGame, setActiveGame] = useState(null);
   const [gameCallMode, setGameCallMode] = useState('video');
@@ -647,6 +651,10 @@ export default function App() {
     privacy: { zodiac: true, goal: true, bio: true }
   });
   const [zodiacCompareSign, setZodiacCompareSign] = useState('Scorpio');
+  const [discoverQueue, setDiscoverQueue] = useState([]);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [matchesList, setMatchesList] = useState([]);
+  const [newMatchModal, setNewMatchModal] = useState(null);
 
   // ---------------- Communities & Feed ----------------
   const [communities, setCommunities] = useState([
@@ -874,6 +882,37 @@ export default function App() {
 
   const assignRelationship = (user, tag) => setUserProfile((p) => ({ ...p, relationships: [...p.relationships.filter((r) => r.user !== user), { user, tag }] }));
 
+  // ---------------- Matches / Discover ----------------
+  const loadDiscoverQueue = async () => {
+    if (!session) return;
+    setDiscoverLoading(true);
+    const { data: swiped } = await supabase.from('swipes').select('swiped_id').eq('swiper_id', session.user.id);
+    const excludeIds = [session.user.id, ...(swiped || []).map((s) => s.swiped_id)];
+    const { data: profiles, error } = await supabase.from('profiles').select('*').not('id', 'in', `(${excludeIds.join(',')})`).limit(20);
+    setDiscoverQueue(error ? [] : (profiles || []));
+    setDiscoverLoading(false);
+  };
+
+  const loadMatches = async () => {
+    if (!session) return;
+    const { data: matches } = await supabase.from('matches').select('*').or(`user_a.eq.${session.user.id},user_b.eq.${session.user.id}`);
+    if (!matches || matches.length === 0) { setMatchesList([]); return; }
+    const otherIds = matches.map((m) => (m.user_a === session.user.id ? m.user_b : m.user_a));
+    const { data: profiles } = await supabase.from('profiles').select('*').in('id', otherIds);
+    setMatchesList(profiles || []);
+  };
+
+  const swipeUser = async (profile, direction) => {
+    if (!session) return;
+    setDiscoverQueue((q) => q.filter((p) => p.id !== profile.id));
+    await supabase.from('swipes').insert({ swiper_id: session.user.id, swiped_id: profile.id, direction });
+    if (direction === 'like') {
+      // The database trigger creates the match row instantly if it's mutual — check right after.
+      const { data: match } = await supabase.from('matches').select('*').or(`and(user_a.eq.${session.user.id},user_b.eq.${profile.id}),and(user_a.eq.${profile.id},user_b.eq.${session.user.id})`).maybeSingle();
+      if (match) { setNewMatchModal(profile); loadMatches(); }
+    }
+  };
+
   const screenMin = Math.floor(screenSeconds / 60);
   const screenPct = Math.min(100, Math.round((screenMin / dailyLimitMin) * 100));
   const filteredSongs = SONG_CATALOG.filter((s) => s.title.toLowerCase().includes(starSongSearch.toLowerCase()) || s.genre.toLowerCase().includes(starSongSearch.toLowerCase()));
@@ -1000,6 +1039,17 @@ export default function App() {
             </div>
             {winnerModal.badge && <p className="bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-bold px-4 py-2 rounded-xl">🏅 New badge unlocked: {winnerModal.badge}</p>}
             <button onClick={() => setWinnerModal(null)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl w-full">Nice!</button>
+          </div>
+        </div>
+      )}
+
+      {newMatchModal && (
+        <div className="fixed inset-0 z-[120] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-6">
+          <div className="bg-slate-900 border-2 border-pink-400/60 rounded-3xl p-8 max-w-sm text-center space-y-3">
+            <p className="text-4xl">💘✨💘</p>
+            <h3 className="font-black text-xl text-pink-300">It's a Match!</h3>
+            <p className="text-sm text-slate-300">You and {newMatchModal.name} liked each other.</p>
+            <button onClick={() => setNewMatchModal(null)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-6 py-2.5 rounded-xl w-full">Keep Swiping</button>
           </div>
         </div>
       )}
@@ -1255,6 +1305,42 @@ export default function App() {
         {/* DATING HUB */}
         {activeTab === 'dating' && (
           <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
+              <h3 className="font-bold text-base text-slate-100">Discover</h3>
+              {discoverLoading && <p className="text-xs text-slate-500 text-center py-8">Finding people...</p>}
+              {!discoverLoading && discoverQueue.length === 0 && <p className="text-xs text-slate-500 text-center py-8">No new people right now — check back later.</p>}
+              {!discoverLoading && discoverQueue.length > 0 && (() => {
+                const p = discoverQueue[0];
+                return (
+                  <div className="bg-slate-950 border border-slate-800 rounded-2xl p-6 space-y-3 text-center">
+                    <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-2xl font-black text-white">{p.name[0]}</div>
+                    <h4 className="text-lg font-bold text-slate-100">{p.name}</h4>
+                    <p className="text-xs text-slate-400">Level {p.level}</p>
+                    {p.bio && <p className="text-sm text-slate-300">{p.bio}</p>}
+                    {p.interests?.length > 0 && <div className="flex flex-wrap justify-center gap-1.5">{p.interests.map((i) => <span key={i} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{i}</span>)}</div>}
+                    <div className="flex items-center justify-center gap-4 pt-2">
+                      <button onClick={() => swipeUser(p, 'pass')} className="w-14 h-14 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xl flex items-center justify-center">✕</button>
+                      <button onClick={() => swipeUser(p, 'like')} className="w-14 h-14 rounded-full bg-gradient-to-tr from-purple-600 to-pink-600 text-white text-xl flex items-center justify-center">❤️</button>
+                    </div>
+                    <p className="text-[10px] text-slate-500">{discoverQueue.length - 1} more in queue</p>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-3">
+              <h3 className="font-bold text-base text-slate-100">Your Matches ({matchesList.length})</h3>
+              {matchesList.length === 0 && <p className="text-xs text-slate-500">No matches yet — like someone in Discover above.</p>}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {matchesList.map((m) => (
+                  <div key={m.id} className="bg-slate-950 border border-slate-800 rounded-2xl p-3 text-center space-y-1">
+                    <div className="w-12 h-12 mx-auto rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-sm font-bold text-white">{m.name[0]}</div>
+                    <p className="text-xs font-bold text-slate-200">{m.name}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4">
               <h3 className="font-bold text-base text-slate-100">Your Dating Profile</h3>
               <div className="flex items-center justify-between"><label className="text-xs text-slate-400">Zodiac Sign</label><select value={datingProfile.zodiac} onChange={(e) => setDatingProfile({ ...datingProfile, zodiac: e.target.value })} className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs">{ZODIAC_SIGNS.map((z) => <option key={z}>{z}</option>)}</select></div>
