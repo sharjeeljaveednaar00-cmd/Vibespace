@@ -325,6 +325,7 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
   const characterRef = useRef(null);
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
+  const [renderError, setRenderError] = useState(null);
 
   useImperativeHandle(ref, () => ({
     captureSnapshot: () => rendererRef.current?.domElement?.toDataURL('image/png') || null,
@@ -336,51 +337,59 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
     const mount = mountRef.current;
     const width = mount.clientWidth || 400, height = mount.clientHeight || 420;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0f0b1f);
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-    camera.position.set(0, 1.15, 3.1);
+    let renderer, controls, alive = true, raf;
+    try {
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0f0b1f);
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+      camera.position.set(0, 1.15, 3.1);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-    renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    mount.innerHTML = '';
-    mount.appendChild(renderer.domElement);
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      mount.innerHTML = '';
+      mount.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
-    keyLight.position.set(2, 4, 3);
-    scene.add(keyLight);
-    const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
-    rimLight.position.set(-3, 2, -2);
-    scene.add(rimLight);
+      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+      const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+      keyLight.position.set(2, 4, 3);
+      scene.add(keyLight);
+      const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
+      rimLight.position.set(-3, 2, -2);
+      scene.add(rimLight);
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.target.set(0, 1, 0);
-    controls.enableDamping = true;
-    controls.minDistance = 1.8; controls.maxDistance = 6;
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1, 0);
+      controls.enableDamping = true;
+      controls.minDistance = 1.8; controls.maxDistance = 6;
 
-    sceneRef.current = scene;
-    rendererRef.current = renderer;
-    cameraRef.current = camera;
-    let alive = true, raf;
-    const animate = () => {
-      if (!alive) return;
-      if (characterRef.current) {
-        if (spin) characterRef.current.rotation.y += 0.004;
-        characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
-      }
-      controls.update();
-      renderer.render(scene, camera);
-      raf = requestAnimationFrame(animate);
-    };
-    animate();
+      sceneRef.current = scene;
+      rendererRef.current = renderer;
+      cameraRef.current = camera;
+      const animate = () => {
+        if (!alive) return;
+        if (characterRef.current) {
+          if (spin) characterRef.current.rotation.y += 0.004;
+          characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
+        }
+        controls.update();
+        renderer.render(scene, camera);
+        raf = requestAnimationFrame(animate);
+      };
+      animate();
+    } catch (err) {
+      // Most common causes: WebGL unavailable/blocked on this device or browser,
+      // or too many WebGL contexts already alive (browsers cap this around 8-16).
+      console.error('VibeAvatar3DViewer: WebGL scene failed to initialize —', err);
+      setRenderError('Your browser or device couldn\u2019t start 3D rendering (WebGL). Try a different browser, or make sure hardware acceleration is enabled.');
+      return () => { alive = false; };
+    }
 
     const handleResize = () => {
-      if (!mount) return;
+      if (!mount || !cameraRef.current || !rendererRef.current) return;
       const w = mount.clientWidth || 400, h = mount.clientHeight || 420;
-      camera.aspect = w / h; camera.updateProjectionMatrix();
-      renderer.setSize(w, h);
+      cameraRef.current.aspect = w / h; cameraRef.current.updateProjectionMatrix();
+      rendererRef.current.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
@@ -388,21 +397,37 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
       alive = false;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', handleResize);
-      controls.dispose();
-      renderer.dispose();
+      controls?.dispose();
+      renderer?.dispose();
     };
   }, [spin]);
 
   // Rebuild the character whenever customization changes.
   useEffect(() => {
     if (!sceneRef.current) return;
-    if (characterRef.current) { sceneRef.current.remove(characterRef.current); }
-    const group = buildVibeAvatar3D(avatar);
-    characterRef.current = group;
-    sceneRef.current.add(group);
+    try {
+      if (characterRef.current) { sceneRef.current.remove(characterRef.current); }
+      const group = buildVibeAvatar3D(avatar);
+      characterRef.current = group;
+      sceneRef.current.add(group);
+      setRenderError(null);
+    } catch (err) {
+      // Most common cause: the installed `three` package is older than r142 and
+      // doesn't have THREE.CapsuleGeometry yet, which this avatar's body/hair use.
+      console.error('VibeAvatar3DViewer: failed to build the avatar mesh —', err);
+      setRenderError('Couldn\u2019t build the 3D avatar — check the console for details (often means the "three" package needs updating to r142+).');
+    }
   }, [avatar]);
 
-  return <div ref={mountRef} className="w-full h-full" />;
+  return (
+    <div ref={mountRef} className="w-full h-full relative">
+      {renderError && (
+        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+          <p className="text-xs text-slate-400">{renderError}</p>
+        </div>
+      )}
+    </div>
+  );
 });
 
 function VibeLensPanel({ filter, label, showFilterStrip, onChangeFilter, className, brightness = 100, contrast = 100, saturate = 100, beauty = 0, warmth = 0 }) {
