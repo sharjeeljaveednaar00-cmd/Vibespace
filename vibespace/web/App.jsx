@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   Video, Mic, MicOff, VideoOff, Users, Shield, ShieldCheck, ShieldAlert,
   Sparkles, Camera, PhoneOff, Settings, Volume2, Plus, Zap, Heart,
@@ -13,54 +13,98 @@ import {
   MapPin, ChevronDown, MessageSquare, AtSign, PartyPopper, Award, Rss
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 // =========================================================================
 // SHARED AR RENDERING — used by live camera views AND the Lens Studio editor
 // =========================================================================
-const applySnapFilter = (ctx, w, h, filter) => {
-  const cx = w / 2, cy = h / 2 - 30;
+// =========================================================================
+// VIBELENS — VibeSpace's own real-time face-tracked camera filters.
+// Uses MediaPipe FaceLandmarker (Google's on-device face mesh model) so
+// accessories genuinely track your face position, size, and tilt — not a
+// fixed spot on screen. Falls back to a centered guess before a face is
+// found (e.g. the instant the camera turns on).
+// =========================================================================
+const drawVibeLens = (ctx, w, h, filter, landmarks) => {
+  let cx = w / 2, cy = h / 2 - 30, scale = 1, tilt = 0;
+  if (landmarks && landmarks.length > 400) {
+    const pt = (i) => ({ x: landmarks[i].x * w, y: landmarks[i].y * h });
+    const forehead = pt(10), leftCheek = pt(234), rightCheek = pt(454), chin = pt(152);
+    cx = forehead.x;
+    cy = forehead.y;
+    const faceWidth = Math.hypot(rightCheek.x - leftCheek.x, rightCheek.y - leftCheek.y);
+    scale = faceWidth / 150; // 150px is the reference width the hand-drawn shapes below were designed at
+    tilt = Math.atan2(rightCheek.y - leftCheek.y, rightCheek.x - leftCheek.x);
+  }
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(tilt);
+  ctx.scale(scale, scale);
   switch (filter) {
     case 'neon_bunny':
       ctx.strokeStyle = '#ec4899'; ctx.shadowColor = '#ec4899'; ctx.shadowBlur = 20; ctx.lineWidth = 8;
-      ctx.beginPath(); ctx.ellipse(cx - 50, cy - 110, 22, 65, -0.2, 0, Math.PI * 2); ctx.stroke();
-      ctx.beginPath(); ctx.ellipse(cx + 50, cy - 110, 22, 65, 0.2, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(-50, -110, 22, 65, -0.2, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(50, -110, 22, 65, 0.2, 0, Math.PI * 2); ctx.stroke();
       break;
     case 'cyber_visor':
       ctx.fillStyle = 'rgba(6, 182, 212, 0.45)'; ctx.strokeStyle = '#22d3ee'; ctx.shadowColor = '#06b6d4'; ctx.shadowBlur = 20; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.roundRect(cx - 95, cy - 35, 190, 55, 14); ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ffffff'; ctx.font = '12px monospace'; ctx.fillText('VIBE ENGINE // 0-LAG ACTIVE', cx - 80, cy + 2);
+      ctx.beginPath(); ctx.roundRect(-95, -35, 190, 55, 14); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.font = '12px monospace'; ctx.fillText('VIBELENS // LIVE', -80, 2);
       break;
     case 'golden_crown':
       ctx.fillStyle = '#f59e0b'; ctx.shadowColor = '#fbbf24'; ctx.shadowBlur = 25;
       ctx.beginPath();
-      ctx.moveTo(cx - 60, cy - 70); ctx.lineTo(cx - 70, cy - 120); ctx.lineTo(cx - 30, cy - 90);
-      ctx.lineTo(cx, cy - 130); ctx.lineTo(cx + 30, cy - 90); ctx.lineTo(cx + 70, cy - 120);
-      ctx.lineTo(cx + 60, cy - 70); ctx.closePath(); ctx.fill();
+      ctx.moveTo(-60, -70); ctx.lineTo(-70, -120); ctx.lineTo(-30, -90);
+      ctx.lineTo(0, -130); ctx.lineTo(30, -90); ctx.lineTo(70, -120);
+      ctx.lineTo(60, -70); ctx.closePath(); ctx.fill();
       break;
     case 'spooky_neon':
       ctx.fillStyle = 'rgba(168, 85, 247, 0.3)'; ctx.strokeStyle = '#a855f7'; ctx.shadowColor = '#a855f7'; ctx.shadowBlur = 25; ctx.lineWidth = 5;
-      ctx.beginPath(); ctx.arc(cx, cy - 20, 85, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(0, -20, 85, 0, Math.PI * 2); ctx.stroke();
       break;
     case 'dreamy_sparkle':
       ctx.fillStyle = '#fef3c7'; ctx.shadowColor = '#fef3c7'; ctx.shadowBlur = 15;
       for (let i = 0; i < 6; i++) {
-        const sx = cx + Math.sin(i * 2 + Date.now() * 0.001) * 120;
-        const sy = cy - 60 + Math.cos(i * 2 + Date.now() * 0.001) * 90;
+        const sx = Math.sin(i * 2 + Date.now() * 0.001) * 120;
+        const sy = -60 + Math.cos(i * 2 + Date.now() * 0.001) * 90;
         ctx.beginPath(); ctx.arc(sx, sy, 4, 0, Math.PI * 2); ctx.fill();
       }
       break;
     case 'dog_ears':
       ctx.fillStyle = '#a16207'; ctx.shadowColor = '#78350f'; ctx.shadowBlur = 10;
-      ctx.beginPath(); ctx.ellipse(cx - 60, cy - 100, 25, 55, -0.3, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx + 60, cy - 100, 25, 55, 0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(-60, -100, 25, 55, -0.3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(60, -100, 25, 55, 0.3, 0, Math.PI * 2); ctx.fill();
       break;
     case 'spatial_aura':
       ctx.strokeStyle = '#8b5cf6'; ctx.shadowColor = '#8b5cf6'; ctx.shadowBlur = 30; ctx.lineWidth = 3;
-      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(cx, cy, 90 + i * 22, 0, Math.PI * 2); ctx.stroke(); }
+      for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(0, 0, 90 + i * 22, 0, Math.PI * 2); ctx.stroke(); }
       break;
     default: break;
   }
   ctx.shadowBlur = 0;
+  ctx.restore();
+};
+
+// Lazily loaded once per app session — the model file (~a few MB) only
+// downloads the first time someone opens VibeLens, not on initial page load.
+let faceLandmarkerPromise = null;
+const getFaceLandmarker = async () => {
+  if (!faceLandmarkerPromise) {
+    faceLandmarkerPromise = (async () => {
+      const { FaceLandmarker, FilesetResolver } = await import('@mediapipe/tasks-vision');
+      const vision = await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm');
+      return FaceLandmarker.createFromOptions(vision, {
+        baseOptions: {
+          modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task',
+          delegate: 'GPU',
+        },
+        runningMode: 'VIDEO',
+        numFaces: 1,
+      });
+    })().catch((e) => { faceLandmarkerPromise = null; throw e; });
+  }
+  return faceLandmarkerPromise;
 };
 
 const FILTERS = [
@@ -74,11 +118,306 @@ const FILTERS = [
   { id: 'spatial_aura', name: 'Spatial Aura', icon: '🌌' }
 ];
 
-function ARVideoPanel({ filter, label, showFilterStrip, onChangeFilter, className }) {
+// =========================================================================
+// VIBE AVATAR 3D — a real, live 3D character built from primitives and
+// customized in real time (skin tone, hair, outfit, glowing aura), rendered
+// with Three.js and orbit-controllable (drag to rotate, scroll to zoom).
+// =========================================================================
+const AURA_COLOR_MAP = { 'Neon Pink': 0xec4899, 'Golden': 0xfbbf24, 'Cyan Glow': 0x22d3ee, 'Violet Mist': 0xa855f7 };
+
+const buildVibeAvatar3D = (avatar) => {
+  const group = new THREE.Group();
+  const skinMat = new THREE.MeshStandardMaterial({ color: avatar.skinTone, roughness: 0.65 });
+  const outfitMat = new THREE.MeshStandardMaterial({ color: avatar.outfitColor, roughness: 0.5 });
+  const hairMat = new THREE.MeshStandardMaterial({ color: avatar.hairColor, roughness: 0.75 });
+  const eyeMat = new THREE.MeshStandardMaterial({ color: avatar.eyeColor ?? '#1a1a1a' });
+  const browMat = new THREE.MeshStandardMaterial({ color: avatar.hairColor, roughness: 0.8 });
+
+  // ---- Face shape sliders ----
+  const faceWidth = avatar.faceWidth ?? 1;
+  const faceLength = avatar.faceLength ?? 1;
+  const eyeSize = avatar.eyeSize ?? 1;
+  const eyeSpacing = avatar.eyeSpacing ?? 1;
+  const noseSize = avatar.noseSize ?? 1;
+  const mouthWidth = avatar.mouthWidth ?? 1;
+  const bodyHeight = avatar.bodyHeight ?? 1;
+  const bodyBuild = avatar.bodyBuild ?? 1;
+  const jawWidth = avatar.jawWidth ?? 1;
+  const earSize = avatar.earSize ?? 1;
+  const browThickness = avatar.browThickness ?? 1;
+  const lipFullness = avatar.lipFullness ?? 1;
+
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 32, 32), skinMat);
+  head.position.y = 1.6;
+  head.scale.set(faceWidth, faceLength, faceWidth);
+  group.add(head);
+
+  // Jaw — a flattened sphere blended into the chin, widened/narrowed independently of the head.
+  const jaw = new THREE.Mesh(new THREE.SphereGeometry(0.46, 24, 16), skinMat);
+  jaw.position.set(0, 1.38, 0.05);
+  jaw.scale.set(faceWidth * jawWidth, 0.55, faceWidth * 0.9);
+  group.add(jaw);
+
+  // Ears
+  const earGeo = new THREE.SphereGeometry(0.08 * earSize, 12, 12);
+  const leftEar = new THREE.Mesh(earGeo, skinMat); leftEar.position.set(-0.49 * faceWidth, 1.6, 0.02); leftEar.scale.set(0.5, 1, 1); group.add(leftEar);
+  const rightEar = new THREE.Mesh(earGeo, skinMat); rightEar.position.set(0.49 * faceWidth, 1.6, 0.02); rightEar.scale.set(0.5, 1, 1); group.add(rightEar);
+
+  const eyeGeo = new THREE.SphereGeometry(0.05 * eyeSize, 12, 12);
+  const eyeX = 0.18 * eyeSpacing;
+  const leftEye = new THREE.Mesh(eyeGeo, eyeMat); leftEye.position.set(-eyeX, 1.65, 0.44 * faceWidth); group.add(leftEye);
+  const rightEye = new THREE.Mesh(eyeGeo, eyeMat); rightEye.position.set(eyeX, 1.65, 0.44 * faceWidth); group.add(rightEye);
+
+  // Nose — a small real feature, scales with the nose size slider.
+  const noseMat = new THREE.MeshStandardMaterial({ color: avatar.skinTone, roughness: 0.65 });
+  const nose = new THREE.Mesh(new THREE.ConeGeometry(0.045 * noseSize, 0.14 * noseSize, 8), noseMat);
+  nose.position.set(0, 1.585, 0.47 * faceWidth);
+  nose.rotation.x = Math.PI / 2 + 0.35;
+  group.add(nose);
+
+  // Eyebrows tilt with the selected expression for a bit of real character.
+  const browTilt = avatar.expression === 'Cool' ? -0.25 : avatar.expression === 'Surprised' ? 0.3 : 0.05;
+  const browGeo = new THREE.BoxGeometry(0.16, 0.03 * browThickness, 0.03);
+  const leftBrow = new THREE.Mesh(browGeo, browMat); leftBrow.position.set(-eyeX, 1.76, 0.44 * faceWidth); leftBrow.rotation.z = browTilt; group.add(leftBrow);
+  const rightBrow = new THREE.Mesh(browGeo, browMat); rightBrow.position.set(eyeX, 1.76, 0.44 * faceWidth); rightBrow.rotation.z = -browTilt; group.add(rightBrow);
+
+  // Mouth — a curved strip that changes with expression, width, and fullness sliders.
+  const mouthMat = new THREE.MeshStandardMaterial({ color: 0x7a3b3b });
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(0.1 * mouthWidth, 0.015 * lipFullness, 8, 16, Math.PI), mouthMat);
+  mouth.position.set(0, avatar.expression === 'Surprised' ? 1.44 : 1.46, 0.46 * faceWidth);
+  mouth.rotation.z = avatar.expression === 'Cool' ? Math.PI : 0; // Cool = smirk flip
+  group.add(mouth);
+
+  if (avatar.hair === 'Short') {
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.52, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+    hair.position.y = 1.78; hair.scale.set(faceWidth, faceLength, faceWidth); group.add(hair);
+  } else if (avatar.hair === 'Long') {
+    const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.52, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+    hairTop.position.y = 1.78; hairTop.scale.set(faceWidth, faceLength, faceWidth); group.add(hairTop);
+    const hairBack = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.22, 0.9, 16), hairMat);
+    hairBack.position.set(0, 1.3, -0.22 * faceWidth); group.add(hairBack);
+  } else if (avatar.hair === 'Mohawk') {
+    const base = new THREE.Mesh(new THREE.SphereGeometry(0.51, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), skinMat);
+    base.position.y = 1.77; base.scale.set(faceWidth, faceLength, faceWidth); group.add(base);
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.45, 8), hairMat);
+    spike.position.y = 2.1; group.add(spike);
+  } else if (avatar.hair === 'Buzzed') {
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.505, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.1), hairMat);
+    hair.position.y = 1.77; hair.scale.set(faceWidth, faceLength, faceWidth); group.add(hair);
+  } else if (avatar.hair === 'Curly') {
+    for (let i = 0; i < 14; i++) {
+      const puff = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 12), hairMat);
+      const angle = (i / 14) * Math.PI * 2;
+      const r = 0.42 * faceWidth;
+      puff.position.set(Math.cos(angle) * r, 1.9 + Math.sin(i * 1.7) * 0.08, Math.sin(angle) * r * 0.9);
+      group.add(puff);
+    }
+  } else if (avatar.hair === 'Afro') {
+    const afro = new THREE.Mesh(new THREE.SphereGeometry(0.68, 24, 24), hairMat);
+    afro.position.y = 1.85; afro.scale.set(faceWidth, faceLength, faceWidth); group.add(afro);
+  } else if (avatar.hair === 'Ponytail') {
+    const hairTop = new THREE.Mesh(new THREE.SphereGeometry(0.52, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+    hairTop.position.y = 1.78; hairTop.scale.set(faceWidth, faceLength, faceWidth); group.add(hairTop);
+    const tail = new THREE.Mesh(new THREE.CapsuleGeometry(0.09, 0.55, 4, 8), hairMat);
+    tail.position.set(0, 1.55, -0.4); tail.rotation.x = 0.5; group.add(tail);
+  }
+  // 'Bald' — no hair mesh added.
+
+  // ---- Accessories (multiple can be worn at once) ----
+  const activeAccessories = avatar.accessories || [];
+  if (activeAccessories.includes('Glasses')) {
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.3 });
+    const lensMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.35, roughness: 0.1 });
+    const lensGeo = new THREE.TorusGeometry(0.11, 0.018, 8, 24);
+    const leftLens = new THREE.Mesh(lensGeo, frameMat); leftLens.position.set(-eyeX, 1.65, 0.46 * faceWidth); group.add(leftLens);
+    const rightLens = new THREE.Mesh(lensGeo, frameMat); rightLens.position.set(eyeX, 1.65, 0.46 * faceWidth); group.add(rightLens);
+    const leftGlass = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24), lensMat); leftGlass.position.set(-eyeX, 1.65, 0.465 * faceWidth); group.add(leftGlass);
+    const rightGlass = new THREE.Mesh(new THREE.CircleGeometry(0.1, 24), lensMat); rightGlass.position.set(eyeX, 1.65, 0.465 * faceWidth); group.add(rightGlass);
+    const bridge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.015), frameMat); bridge.position.set(0, 1.65, 0.46 * faceWidth); group.add(bridge);
+  }
+  if (activeAccessories.includes('Cap')) {
+    const capMat = new THREE.MeshStandardMaterial({ color: avatar.outfitColor, roughness: 0.6 });
+    const dome = new THREE.Mesh(new THREE.SphereGeometry(0.53, 24, 16, 0, Math.PI * 2, 0, Math.PI / 2.4), capMat);
+    dome.position.y = 1.85; dome.scale.set(faceWidth, 1, faceWidth); group.add(dome);
+    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.03, 24, 1, false, -Math.PI / 2, Math.PI), capMat);
+    brim.position.set(0, 1.78, 0.25 * faceWidth); group.add(brim);
+  }
+  if (activeAccessories.includes('Bow Tie')) {
+    const bowMat = new THREE.MeshStandardMaterial({ color: 0xec4899, roughness: 0.4 });
+    const left = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.12, 4), bowMat); left.rotation.z = Math.PI / 2; left.position.set(-0.06, 1.15, 0.36); group.add(left);
+    const right = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.12, 4), bowMat); right.rotation.z = -Math.PI / 2; right.position.set(0.06, 1.15, 0.36); group.add(right);
+    const knot = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), bowMat); knot.position.set(0, 1.15, 0.36); group.add(knot);
+  }
+  if (activeAccessories.includes('Earrings')) {
+    const earringMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.2, metalness: 0.7 });
+    const leftEarring = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10), earringMat); leftEarring.position.set(-0.5 * faceWidth, 1.5, 0.02); group.add(leftEarring);
+    const rightEarring = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 10), earringMat); rightEarring.position.set(0.5 * faceWidth, 1.5, 0.02); group.add(rightEarring);
+  }
+  if (activeAccessories.includes('Necklace')) {
+    const necklaceMat = new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.25, metalness: 0.6 });
+    const necklace = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.015, 8, 32, Math.PI * 1.2), necklaceMat);
+    necklace.position.set(0, 1.18, 0.28); necklace.rotation.x = Math.PI / 2.3; group.add(necklace);
+  }
+  if (activeAccessories.includes('Headband')) {
+    const headbandMat = new THREE.MeshStandardMaterial({ color: avatar.outfitColor, roughness: 0.5 });
+    const headband = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.03, 8, 32), headbandMat);
+    headband.position.set(0, 1.72, 0); headband.rotation.x = Math.PI / 2; headband.scale.set(faceWidth, 1, faceWidth * 0.85); group.add(headband);
+  }
+
+  const torso = new THREE.Mesh(new THREE.CapsuleGeometry(0.38, 0.7, 4, 16), outfitMat);
+  torso.position.y = 0.75; torso.scale.set(bodyBuild, 1, bodyBuild); group.add(torso);
+
+  // ---- Pose-driven limbs (build slider changes girth, not length) ----
+  const armGeo = new THREE.CapsuleGeometry(0.11, 0.6, 4, 8);
+  const leftArm = new THREE.Mesh(armGeo, skinMat);
+  const rightArm = new THREE.Mesh(armGeo, skinMat);
+  leftArm.scale.set(bodyBuild, 1, bodyBuild); rightArm.scale.set(bodyBuild, 1, bodyBuild);
+  leftArm.position.set(-0.52 * Math.max(1, bodyBuild * 0.9), 0.75, 0);
+  rightArm.position.set(0.52 * Math.max(1, bodyBuild * 0.9), 0.75, 0);
+  if (avatar.pose === 'Wave') {
+    rightArm.position.set(0.62, 1.05, 0.1); rightArm.rotation.z = -1.9;
+    leftArm.rotation.z = 0.15;
+  } else if (avatar.pose === 'Flex') {
+    leftArm.position.set(-0.58, 1.0, 0.15); leftArm.rotation.z = 2.0;
+    rightArm.position.set(0.58, 1.0, 0.15); rightArm.rotation.z = -2.0;
+  } else {
+    leftArm.rotation.z = 0.15; rightArm.rotation.z = -0.15; // Idle
+  }
+  group.add(leftArm); group.add(rightArm);
+
+  const legGeo = new THREE.CapsuleGeometry(0.14, 0.7, 4, 8);
+  const leftLeg = new THREE.Mesh(legGeo, outfitMat); leftLeg.position.set(-0.18, -0.1, 0); leftLeg.scale.set(bodyBuild, 1, bodyBuild); group.add(leftLeg);
+  const rightLeg = new THREE.Mesh(legGeo, outfitMat); rightLeg.position.set(0.18, -0.1, 0); rightLeg.scale.set(bodyBuild, 1, bodyBuild); group.add(rightLeg);
+
+  if (avatar.aura && avatar.aura !== 'None') {
+    const auraColor = AURA_COLOR_MAP[avatar.aura] || 0xffffff;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.02, 8, 64), new THREE.MeshBasicMaterial({ color: auraColor, transparent: true, opacity: 0.85 }));
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0.75; group.add(ring);
+    const glow = new THREE.PointLight(auraColor, 1.4, 3.5);
+    glow.position.y = 0.9; group.add(glow);
+    // Floating particles around the aura for a bit more life.
+    for (let i = 0; i < 8; i++) {
+      const p = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 6), new THREE.MeshBasicMaterial({ color: auraColor }));
+      const angle = (i / 8) * Math.PI * 2;
+      p.position.set(Math.cos(angle) * 0.9, 0.75 + Math.sin(i) * 0.3, Math.sin(angle) * 0.9);
+      group.add(p);
+    }
+  }
+
+  // Ground disc so the character doesn't float in empty space.
+  const floor = new THREE.Mesh(
+    new THREE.CircleGeometry(1.1, 48),
+    new THREE.MeshStandardMaterial({ color: 0x1a1530, roughness: 0.9, transparent: true, opacity: 0.6 })
+  );
+  floor.rotation.x = -Math.PI / 2;
+  floor.position.y = -0.62;
+  group.add(floor);
+
+  // Height slider — a proportional vertical stretch of the whole figure.
+  group.scale.y = bodyHeight;
+
+  return group;
+};
+
+const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin = true }, ref) {
+  const mountRef = useRef(null);
+  const sceneRef = useRef(null);
+  const characterRef = useRef(null);
+  const rendererRef = useRef(null);
+  const cameraRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    captureSnapshot: () => rendererRef.current?.domElement?.toDataURL('image/png') || null,
+  }));
+
+  // One-time scene setup.
+  useEffect(() => {
+    if (!mountRef.current) return;
+    const mount = mountRef.current;
+    const width = mount.clientWidth || 400, height = mount.clientHeight || 420;
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f0b1f);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.set(0, 1.15, 3.1);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    mount.innerHTML = '';
+    mount.appendChild(renderer.domElement);
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    keyLight.position.set(2, 4, 3);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
+    rimLight.position.set(-3, 2, -2);
+    scene.add(rimLight);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1, 0);
+    controls.enableDamping = true;
+    controls.minDistance = 1.8; controls.maxDistance = 6;
+
+    sceneRef.current = scene;
+    rendererRef.current = renderer;
+    cameraRef.current = camera;
+    let alive = true, raf;
+    const animate = () => {
+      if (!alive) return;
+      if (characterRef.current) {
+        if (spin) characterRef.current.rotation.y += 0.004;
+        characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(animate);
+    };
+    animate();
+
+    const handleResize = () => {
+      if (!mount) return;
+      const w = mount.clientWidth || 400, h = mount.clientHeight || 420;
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
+      window.removeEventListener('resize', handleResize);
+      controls.dispose();
+      renderer.dispose();
+    };
+  }, [spin]);
+
+  // Rebuild the character whenever customization changes.
+  useEffect(() => {
+    if (!sceneRef.current) return;
+    if (characterRef.current) { sceneRef.current.remove(characterRef.current); }
+    const group = buildVibeAvatar3D(avatar);
+    characterRef.current = group;
+    sceneRef.current.add(group);
+  }, [avatar]);
+
+  return <div ref={mountRef} className="w-full h-full" />;
+});
+
+function VibeLensPanel({ filter, label, showFilterStrip, onChangeFilter, className, brightness = 100, contrast = 100, saturate = 100, beauty = 0, warmth = 0 }) {
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const landmarksRef = useRef(null);
+  const [trackingStatus, setTrackingStatus] = useState('loading'); // loading | tracking | unavailable
+
   useEffect(() => {
-    let stream, raf, alive = true;
+    let stream, raf, alive = true, landmarker = null;
+
+    getFaceLandmarker()
+      .then((lm) => { landmarker = lm; if (alive) setTrackingStatus('tracking'); })
+      .catch(() => { if (alive) setTrackingStatus('unavailable'); });
+
     const render = () => {
       if (!alive) return;
       const video = videoRef.current, canvas = canvasRef.current;
@@ -86,15 +425,24 @@ function ARVideoPanel({ filter, label, showFilterStrip, onChangeFilter, classNam
         const ctx = canvas.getContext('2d');
         if (video && video.readyState === video.HAVE_ENOUGH_DATA) {
           canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
+          if (landmarker) {
+            try {
+              const result = landmarker.detectForVideo(video, performance.now());
+              landmarksRef.current = result.faceLandmarks?.[0] || null;
+            } catch { /* model still warming up on first frames */ }
+          }
+          const warmthDeg = warmth * 1.2;
+          ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturate}%) blur(${beauty * 0.06}px) sepia(${Math.max(0, warmth)}%) hue-rotate(-${warmthDeg}deg)`;
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          ctx.filter = 'none';
         } else {
           canvas.width = 640; canvas.height = 480;
           ctx.fillStyle = '#090d16'; ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2 - 20, 75, 0, Math.PI * 2);
           ctx.fillStyle = '#6366f1'; ctx.fill();
         }
-        applySnapFilter(ctx, canvas.width, canvas.height, filter);
+        drawVibeLens(ctx, canvas.width, canvas.height, filter, landmarksRef.current);
       }
       raf = requestAnimationFrame(render);
     };
@@ -106,13 +454,18 @@ function ARVideoPanel({ filter, label, showFilterStrip, onChangeFilter, classNam
       raf = requestAnimationFrame(render);
     })();
     return () => { alive = false; cancelAnimationFrame(raf); if (stream) stream.getTracks().forEach((t) => t.stop()); };
-  }, [filter]);
+  }, [filter, brightness, contrast, saturate, beauty, warmth]);
 
   return (
     <div className={`relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col justify-end ${className || 'min-h-[220px]'}`}>
       <video ref={videoRef} className="hidden" muted playsInline />
       <canvas ref={canvasRef} className="w-full h-full object-cover absolute inset-0" />
-      {label && <span className="relative z-10 m-3 self-start bg-slate-950/80 px-3 py-1 rounded-xl text-xs font-bold text-purple-300">{label}</span>}
+      <div className="relative z-10 m-3 self-start flex gap-2">
+        {label && <span className="bg-slate-950/80 px-3 py-1 rounded-xl text-xs font-bold text-purple-300">{label}</span>}
+        <span className={`px-2.5 py-1 rounded-xl text-[10px] font-bold ${trackingStatus === 'tracking' ? 'bg-emerald-500/20 text-emerald-300' : trackingStatus === 'loading' ? 'bg-slate-800/80 text-slate-400' : 'bg-amber-500/20 text-amber-300'}`}>
+          {trackingStatus === 'tracking' ? '● VibeLens Face Tracking ON' : trackingStatus === 'loading' ? 'Loading face tracking...' : 'Face tracking unavailable — filters centered'}
+        </span>
+      </div>
       {showFilterStrip && (
         <div className="relative z-10 flex gap-1.5 p-2 bg-slate-950/70 overflow-x-auto">
           {FILTERS.map((f) => (
@@ -126,7 +479,7 @@ function ARVideoPanel({ filter, label, showFilterStrip, onChangeFilter, classNam
 
 // A big equal-size tile for a call participant (self = live camera, others = avatar w/ speaking pulse)
 function ParticipantTile({ name, isSelf, filter, onChangeFilter, speaking }) {
-  if (isSelf) return <ARVideoPanel filter={filter} label={`${name} (You)`} showFilterStrip onChangeFilter={onChangeFilter} className="aspect-video" />;
+  if (isSelf) return <VibeLensPanel filter={filter} label={`${name} (You)`} showFilterStrip onChangeFilter={onChangeFilter} className="aspect-video" />;
   return (
     <div className="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden aspect-video flex items-center justify-center">
       <div className={`w-20 h-20 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-2xl font-black text-white ${speaking ? 'ring-4 ring-emerald-400 animate-pulse' : ''}`}>{name[0]}</div>
@@ -302,10 +655,16 @@ const ZODIAC_TRAITS = {
   Sagittarius: 'Adventurous Sagittarius', Capricorn: 'Ambitious Capricorn', Aquarius: 'Visionary Aquarius', Pisces: 'Dreamy Pisces'
 };
 const AVATAR_OPTIONS = {
-  face: ['🙂', '😊', '😎', '🥰', '🤨'],
-  hair: ['Short', 'Long', 'Curly', 'Buzzed', 'Braided'],
+  skinTone: ['#f4c9a1', '#e8b28c', '#c68a58', '#8d5a34', '#5c3a21'],
+  eyeColor: ['#1a1a1a', '#3b2415', '#2d5a3d', '#1e5f8c', '#6b4423'],
+  hair: ['Short', 'Long', 'Curly', 'Afro', 'Ponytail', 'Mohawk', 'Buzzed', 'Bald'],
+  hairColor: ['#1a1a1a', '#5c3a21', '#c68a2f', '#a855f7', '#ec4899'],
   outfit: ['Streetwear', 'Formal', 'Cyberpunk', 'Cozy', 'Glam'],
-  aura: ['None', 'Neon Pink', 'Golden', 'Cyan Glow', 'Violet Mist']
+  outfitColor: ['#334155', '#111827', '#06b6d4', '#f59e0b', '#ec4899'],
+  aura: ['None', 'Neon Pink', 'Golden', 'Cyan Glow', 'Violet Mist'],
+  accessory: ['Glasses', 'Cap', 'Bow Tie', 'Earrings', 'Necklace', 'Headband'],
+  pose: ['Idle', 'Wave', 'Flex'],
+  expression: ['Neutral', 'Cool', 'Surprised']
 };
 const REACTIONS = [
   { id: 'heart', icon: '❤️', label: 'Love' },
@@ -344,11 +703,37 @@ export default function App() {
       xp: profile.xp ?? p.xp,
     }));
     setVibeCoins(profile.vibe_coins ?? 500);
+    if (profile.avatar) setAvatar((a) => ({ ...a, ...profile.avatar }));
+    if (profile.avatar_snapshot_url) setPictureUrl(profile.avatar_snapshot_url);
   };
 
   const loadProfile = async (userId) => {
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).single();
     if (!error) applyServerProfile(data);
+  };
+
+  const saveAvatar = async () => {
+    if (!session) { fireToast('Log in to save your avatar'); return; }
+    setAvatarSaving(true);
+    const { error } = await supabase.from('profiles').update({ avatar }).eq('id', session.user.id);
+    setAvatarSaving(false);
+    fireToast(error ? 'Could not save avatar — try again' : '✨ Avatar saved to your profile');
+  };
+
+  const captureAsProfilePicture = async () => {
+    if (!session) { fireToast('Log in to set a profile picture'); return; }
+    const dataUrl = avatarViewerRef.current?.captureSnapshot();
+    if (!dataUrl) { fireToast('Could not capture — try again'); return; }
+    setSavingPicture(true);
+    const blob = await (await fetch(dataUrl)).blob();
+    const file = new File([blob], `avatar-${Date.now()}.png`, { type: 'image/png' });
+    const media = await uploadMediaFile(file);
+    if (media) {
+      const { error } = await supabase.from('profiles').update({ avatar_snapshot_url: media.mediaUrl }).eq('id', session.user.id);
+      if (!error) { setPictureUrl(media.mediaUrl); fireToast('📸 Profile picture updated'); }
+      else fireToast('Could not save profile picture — try again');
+    }
+    setSavingPicture(false);
   };
 
   const loadFeed = async () => {
@@ -361,7 +746,7 @@ export default function App() {
       const mine = (reactions || []).filter((r) => r.post_id === p.id);
       const reactionCounts = {};
       mine.forEach((r) => { reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1; });
-      return { id: p.id, user: p.author_name, text: p.text, comments: p.comments, mentions: p.mentions || [], reactions: reactionCounts };
+      return { id: p.id, user: p.author_name, text: p.text, comments: p.comments, mentions: p.mentions || [], reactions: reactionCounts, media_url: p.media_url, media_type: p.media_type };
     });
     setFeedPosts(counted);
     setFeedLoading(false);
@@ -508,59 +893,12 @@ export default function App() {
   const [selfieCount, setSelfieCount] = useState(3284);
   const [selectedFilter, setSelectedFilter] = useState('neon_bunny');
 
-  // ---------------- Lens Studio (photo editor) ----------------
-  const [lensImage, setLensImage] = useState(null);
-  const [lensFilter, setLensFilter] = useState('none');
+  // ---------------- VibeLens live adjustments (applied to the real camera feed) ----------------
   const [lensBrightness, setLensBrightness] = useState(100);
   const [lensContrast, setLensContrast] = useState(100);
   const [lensSaturate, setLensSaturate] = useState(100);
-  const [lensStickers, setLensStickers] = useState([]);
-  const [lensText, setLensText] = useState('');
   const [lensBeauty, setLensBeauty] = useState(0);
   const [lensWarmth, setLensWarmth] = useState(0);
-  const [lensBackdrop, setLensBackdrop] = useState('none');
-  const lensCanvasRef = useRef(null);
-  const lensImgRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = lensCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    canvas.width = 500; canvas.height = 500;
-    const warmthDeg = lensWarmth * 1.2;
-    ctx.filter = `brightness(${lensBrightness}%) contrast(${lensContrast}%) saturate(${lensSaturate}%) blur(${lensBeauty * 0.06}px) sepia(${Math.max(0, lensWarmth)}%) hue-rotate(-${warmthDeg}deg)`;
-    if (lensImgRef.current) {
-      ctx.drawImage(lensImgRef.current, 0, 0, canvas.width, canvas.height);
-    } else {
-      ctx.fillStyle = '#1e1b3a'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = '#64748b'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
-      ctx.fillText('Import a photo to start editing', canvas.width / 2, canvas.height / 2);
-      ctx.textAlign = 'left';
-    }
-    ctx.filter = 'none';
-    if (lensBackdrop !== 'none') { ctx.fillStyle = lensBackdrop; ctx.globalAlpha = 0.18; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.globalAlpha = 1; }
-    applySnapFilter(ctx, canvas.width, canvas.height, lensFilter);
-    lensStickers.forEach((s) => { ctx.font = '48px serif'; ctx.fillText(s.emoji, s.x, s.y); });
-    if (lensText) { ctx.fillStyle = '#ffffff'; ctx.font = 'bold 28px sans-serif'; ctx.shadowColor = '#000'; ctx.shadowBlur = 6; ctx.fillText(lensText, 24, canvas.height - 24); ctx.shadowBlur = 0; }
-  }, [lensImage, lensFilter, lensBrightness, lensContrast, lensSaturate, lensStickers, lensText, lensBeauty, lensWarmth, lensBackdrop]);
-
-  const handleLensUpload = (e) => {
-    const file = e.target.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const img = new window.Image();
-      img.onload = () => { lensImgRef.current = img; setLensImage(ev.target.result); };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-  };
-  const addLensSticker = (emoji) => setLensStickers((s) => [...s, { emoji, x: 60 + Math.random() * 350, y: 80 + Math.random() * 300 }]);
-  const saveLensToVault = () => {
-    const canvas = lensCanvasRef.current;
-    const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
-    setVaultMemories((v) => [{ id: 'v' + Date.now(), title: 'Lens Studio Creation', date: 'Just Now', category: 'Snap Filter', image: dataUrl, locked: false }, ...v]);
-    fireToast('🎨 Saved your edit to the Vibe Vault');
-  };
 
   // ---------------- VibeRoulette ----------------
   const [omegleState, setOmegleState] = useState('idle');
@@ -642,7 +980,11 @@ export default function App() {
   const [qaPoll, setQaPoll] = useState({ yes: 6, no: 3 });
 
   // ---------------- Avatar Studio ----------------
-  const [avatar, setAvatar] = useState({ face: '🙂', hair: 'Short', outfit: 'Streetwear', aura: 'None' });
+  const [avatar, setAvatar] = useState({ skinTone: '#e8b28c', hair: 'Short', hairColor: '#1a1a1a', outfit: 'Streetwear', outfitColor: '#334155', aura: 'None', accessories: [], pose: 'Idle', expression: 'Neutral', eyeColor: '#1a1a1a', faceWidth: 1, faceLength: 1, eyeSize: 1, eyeSpacing: 1, noseSize: 1, mouthWidth: 1, jawWidth: 1, earSize: 1, browThickness: 1, lipFullness: 1, bodyHeight: 1, bodyBuild: 1 });
+  const [avatarSaving, setAvatarSaving] = useState(false);
+  const avatarViewerRef = useRef(null);
+  const [pictureUrl, setPictureUrl] = useState(null);
+  const [savingPicture, setSavingPicture] = useState(false);
 
   // ---------------- Dating Hub ----------------
   const [datingProfile, setDatingProfile] = useState({
@@ -675,6 +1017,11 @@ export default function App() {
   const commentFileRef = useRef(null);
   const [postDraft, setPostDraft] = useState('');
   const [postMentions, setPostMentions] = useState([]);
+  const [postUploading, setPostUploading] = useState(false);
+  const postFileRef = useRef(null);
+  const [recordingFor, setRecordingFor] = useState(null); // 'post' | postId of a comment thread | null
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const [lounges] = useState([
     { id: '1', title: 'Vibe Truth Wheel Party & Liar Game Night', host: 'Kira_Host', listeners: 142, tag: '🎮 Games Live', game: 'truth_wheel' },
@@ -700,13 +1047,27 @@ export default function App() {
     setWinnerModal({ name: userProfile.name, xp, coins, badge, gameName });
   };
 
-  const captureSnapToVault = (selector) => {
-    const canvas = document.querySelector(selector);
-    const dataUrl = canvas ? canvas.toDataURL('image/png') : null;
-    setVaultMemories((v) => [{ id: 'v' + Date.now(), title: `AR Selfie #${selfieCount + 1}`, date: 'Just Now', category: 'Snap Filter', image: dataUrl, locked: false }, ...v]);
-    setSelfieCount((c) => c + 1);
-    setUserProfile((p) => ({ ...p, xp: p.xp + 100, vibesCount: p.vibesCount + 20 }));
-    fireToast('✨ Selfie saved to your Vibe Vault');
+  const captureVibeLens = async (destination) => {
+    const canvas = document.querySelector('.vibelens-canvas canvas');
+    if (!canvas) return;
+    if (destination === 'vault') {
+      const dataUrl = canvas.toDataURL('image/png');
+      setVaultMemories((v) => [{ id: 'v' + Date.now(), title: `VibeLens Capture #${selfieCount + 1}`, date: 'Just Now', category: 'VibeLens', image: dataUrl, locked: false }, ...v]);
+      setSelfieCount((c) => c + 1);
+      setUserProfile((p) => ({ ...p, xp: p.xp + 100, vibesCount: p.vibesCount + 20 }));
+      fireToast('✨ Saved to your Vibe Vault');
+      return;
+    }
+    // destination === 'post': upload the capture and create a real feed post with it attached.
+    if (!session) { fireToast('Log in to post'); return; }
+    canvas.toBlob(async (blob) => {
+      if (!blob) return;
+      const file = new File([blob], `vibelens-${Date.now()}.png`, { type: 'image/png' });
+      setPostUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) { await submitPost(media); setSelfieCount((c) => c + 1); }
+      setPostUploading(false);
+    }, 'image/png');
   };
 
   const mockStrangers = [
@@ -779,19 +1140,87 @@ export default function App() {
   };
 
   const toggleMention = (name) => setPostMentions((m) => m.includes(name) ? m.filter((n) => n !== name) : [...m, name]);
-  const submitPost = async () => {
-    if (!postDraft.trim() || !session) return;
+  const submitPost = async (media) => {
+    if (!session) return;
+    if (!postDraft.trim() && !media) return;
     const text = postDraft;
     const mentions = postMentions;
     setPostDraft(''); setPostMentions([]);
     const { data, error } = await supabase
       .from('posts')
-      .insert({ author_id: session.user.id, author_name: userProfile.name, text, mentions })
+      .insert({
+        author_id: session.user.id,
+        author_name: userProfile.name,
+        text,
+        mentions,
+        media_url: media?.mediaUrl || null,
+        media_type: media?.mediaType || null,
+      })
       .select()
       .single();
     if (error) { fireToast('Could not post — try again'); return; }
-    setFeedPosts((p) => [{ id: data.id, user: data.author_name, text: data.text, comments: 0, mentions: data.mentions || [], reactions: {} }, ...p]);
+    setFeedPosts((p) => [{ id: data.id, user: data.author_name, text: data.text, comments: 0, mentions: data.mentions || [], reactions: {}, media_url: data.media_url, media_type: data.media_type }, ...p]);
   };
+
+  const uploadMediaFile = async (file) => {
+    if (!session) return null;
+    if (file.size > 25 * 1024 * 1024) { fireToast('File too big — 25MB max'); return null; }
+    const mediaType = file.type.startsWith('video') ? 'video' : file.type.startsWith('audio') ? 'voice' : file.type === 'image/gif' ? 'gif' : 'image';
+    const path = `${session.user.id}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from('comment-media').upload(path, file);
+    if (uploadError) { fireToast('Upload failed — try again'); return null; }
+    const { data: urlData } = supabase.storage.from('comment-media').getPublicUrl(path);
+    return { mediaUrl: urlData.publicUrl, mediaType };
+  };
+
+  const handlePostFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setPostUploading(true);
+    const media = await uploadMediaFile(file);
+    if (media) await submitPost(media);
+    setPostUploading(false);
+  };
+
+  // ---------------- Voice recording (shared by posts and comments) ----------------
+  const startVoiceRecording = async (target) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      recorder.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      recorder.start();
+      mediaRecorderRef.current = recorder;
+      setRecordingFor(target);
+    } catch {
+      fireToast('Microphone access denied or unavailable');
+    }
+  };
+
+  const stopVoiceRecording = async (target) => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    const stopped = new Promise((resolve) => { recorder.onstop = resolve; });
+    recorder.stop();
+    recorder.stream.getTracks().forEach((t) => t.stop());
+    await stopped;
+    setRecordingFor(null);
+    const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+    const file = new File([blob], `voice-${Date.now()}.webm`, { type: 'audio/webm' });
+    if (target === 'post') {
+      setPostUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await submitPost(media);
+      setPostUploading(false);
+    } else {
+      setCommentUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await submitComment(target, media);
+      setCommentUploading(false);
+    }
+  };
+
   const addPostReaction = async (postId, reactionId) => {
     if (!session) return;
     // Optimistic update first, since the UI expects an instant response.
@@ -1083,7 +1512,7 @@ export default function App() {
               { id: 'vibestage', label: 'VibeStage Circles', icon: Radio },
               { id: 'omegle', label: 'VibeRoulette 1-on-1', icon: RefreshCw, highlight: true },
               { id: 'games', label: '36 VibeSpace Games', icon: Gamepad2, badge: 'PLAY' },
-              { id: 'lens', label: 'AR Lens Studio', icon: Camera },
+              { id: 'lens', label: 'VibeLens Studio', icon: Camera },
               { id: 'avatar', label: 'Avatar Studio', icon: Smile, badge: 'NEW' },
               { id: 'dating', label: 'Dating Hub', icon: Heart, badge: 'NEW' },
               { id: 'feed', label: 'Feed & Posts', icon: Rss },
@@ -1128,7 +1557,7 @@ export default function App() {
               {activeTab === 'vibestage' && 'VibeStage Circles'}
               {activeTab === 'omegle' && 'VibeRoulette 1-on-1'}
               {activeTab === 'games' && '36 VibeSpace Games'}
-              {activeTab === 'lens' && 'AR Lens Studio'}
+              {activeTab === 'lens' && 'VibeLens Studio'}
               {activeTab === 'avatar' && 'Avatar Studio'}
               {activeTab === 'dating' && 'Dating Hub & Compatibility'}
               {activeTab === 'feed' && 'Feed & Posts'}
@@ -1191,7 +1620,7 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[380px]">
-              <ARVideoPanel filter={selectedFilter} label="You" showFilterStrip onChangeFilter={setSelectedFilter} className="min-h-[380px]" />
+              <VibeLensPanel filter={selectedFilter} label="You" showFilterStrip onChangeFilter={setSelectedFilter} className="min-h-[380px]" />
               <div className="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col items-center justify-center p-6 text-center min-h-[380px]">
                 {omegleState === 'idle' && matchCooldown === 0 && (<button onClick={startOmegleMatch} className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-extrabold text-xs px-8 py-3.5 rounded-2xl shadow-lg">Start Random Match</button>)}
                 {matchCooldown > 0 && (<div className="space-y-2 text-center"><Hourglass className="w-8 h-8 text-indigo-300 mx-auto animate-pulse" /><p className="text-xs text-indigo-300 font-bold">Mindful pause: {matchCooldown}s</p></div>)}
@@ -1238,25 +1667,26 @@ export default function App() {
           </div>
         )}
 
-        {/* AR LENS STUDIO */}
+        {/* VIBELENS STUDIO — VibeSpace's own real-time face-tracked filters */}
         {activeTab === 'lens' && (
           <div className="p-6 max-w-6xl mx-auto w-full space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <h3 className="font-bold text-sm text-slate-200">Live Camera + AR Filters</h3>
-                <div className="snap-canvas"><ARVideoPanel filter={selectedFilter} showFilterStrip onChangeFilter={setSelectedFilter} className="aspect-video" /></div>
-                <button onClick={() => captureSnapToVault('.snap-canvas canvas')} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-2"><Camera className="w-4 h-4" /><span>Snap Selfie ({selfieCount.toLocaleString()} taken)</span></button>
+                <h3 className="font-bold text-sm text-slate-200">VibeLens — Live Camera + Face-Tracked Filters</h3>
+                <div className="vibelens-canvas">
+                  <VibeLensPanel filter={selectedFilter} showFilterStrip onChangeFilter={setSelectedFilter} className="aspect-video" brightness={lensBrightness} contrast={lensContrast} saturate={lensSaturate} beauty={lensBeauty} warmth={lensWarmth} />
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => captureVibeLens('vault')} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-2"><Camera className="w-4 h-4" /><span>Capture ({selfieCount.toLocaleString()} taken)</span></button>
+                  <button onClick={() => captureVibeLens('post')} className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs px-5 py-2.5 rounded-xl">Capture & Post to Feed</button>
+                </div>
+                <p className="text-[10px] text-slate-500 text-center">Accessories are tracked to your real face position and size in real time — move around and they follow.</p>
               </div>
 
               <div className="space-y-3">
-                <h3 className="font-bold text-sm text-slate-200">Lens Studio Photo Editor</h3>
+                <h3 className="font-bold text-sm text-slate-200">Live Adjustments</h3>
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                  <canvas ref={lensCanvasRef} className="w-full rounded-xl border border-slate-800" />
-                  <label className="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-xs font-bold py-2.5 rounded-xl cursor-pointer">
-                    <Upload className="w-4 h-4" /> Import Photo
-                    <input type="file" accept="image/*" className="hidden" onChange={handleLensUpload} />
-                  </label>
-                  <div className="flex gap-1.5 overflow-x-auto">{FILTERS.map((f) => (<button key={f.id} onClick={() => setLensFilter(f.id)} className={`shrink-0 px-2 py-1 rounded-lg text-[10px] font-bold border ${lensFilter === f.id ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-300'}`}>{f.icon} {f.name}</button>))}</div>
+                  <p className="text-[10px] text-slate-500">These apply to your camera feed in real time — what you see is what gets captured.</p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Brightness</span><input type="range" min="50" max="150" value={lensBrightness} onChange={(e) => setLensBrightness(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Contrast</span><input type="range" min="50" max="150" value={lensContrast} onChange={(e) => setLensContrast(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
@@ -1264,17 +1694,8 @@ export default function App() {
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Beauty</span><input type="range" min="0" max="100" value={lensBeauty} onChange={(e) => setLensBeauty(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                     <div className="flex items-center gap-2"><Sliders className="w-3.5 h-3.5 text-slate-400" /><span className="text-[10px] text-slate-400 w-16">Warmth</span><input type="range" min="0" max="60" value={lensWarmth} onChange={(e) => setLensWarmth(Number(e.target.value))} className="flex-1 accent-purple-500" /></div>
                   </div>
-                  <div className="flex gap-2 items-center"><Type className="w-3.5 h-3.5 text-slate-400" /><input value={lensText} onChange={(e) => setLensText(e.target.value)} placeholder="Add caption text" className="flex-1 bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs" /></div>
-                  <div className="flex gap-1.5 flex-wrap">{['✨', '🔥', '💖', '👑', '🐰', '🎉'].map((e) => (<button key={e} onClick={() => addLensSticker(e)} className="bg-slate-800 hover:bg-purple-600/40 text-lg px-2 py-1 rounded-lg">{e}</button>))}</div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-slate-500">Backdrop tint</p>
-                    <div className="flex gap-1.5">{['none', '#a855f7', '#ec4899', '#f59e0b', '#06b6d4'].map((c) => (<button key={c} onClick={() => setLensBackdrop(c)} className={`w-6 h-6 rounded-full border-2 ${lensBackdrop === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c === 'none' ? '#1e293b' : c }} />))}</div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={() => { setLensStickers([]); setLensText(''); setLensBeauty(0); setLensWarmth(0); setLensBackdrop('none'); }} className="flex-1 bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Reset Edits</button>
-                    <button onClick={saveLensToVault} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Save to Vault</button>
-                  </div>
-                  <p className="text-[10px] text-slate-500 text-center">More layers, adjustments, and sticker packs than the usual lens apps — all reusable across VibeRoulette, dating matches, games, and stages.</p>
+                  <button onClick={() => { setLensBrightness(100); setLensContrast(100); setLensSaturate(100); setLensBeauty(0); setLensWarmth(0); }} className="w-full bg-slate-800 text-xs font-bold py-2.5 rounded-xl">Reset Adjustments</button>
+                  <p className="text-[10px] text-slate-500 text-center">{FILTERS.length} VibeLens filters available — pick one from the strip on the live camera. More lenses can be added anytime.</p>
                 </div>
               </div>
             </div>
@@ -1285,18 +1706,61 @@ export default function App() {
         {activeTab === 'avatar' && (
           <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 flex items-center justify-center">
-                <div className={`relative w-48 h-48 rounded-full flex items-center justify-center text-7xl ${avatar.aura !== 'None' ? 'ring-8' : ''} ${avatar.aura === 'Neon Pink' ? 'ring-pink-500' : avatar.aura === 'Golden' ? 'ring-amber-400' : avatar.aura === 'Cyan Glow' ? 'ring-cyan-400' : avatar.aura === 'Violet Mist' ? 'ring-purple-500' : ''}`} style={{ background: 'radial-gradient(circle, #312e81, #1e1b4b)' }}>
-                  {avatar.face}
+              <div className="space-y-3">
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden min-h-[420px]">
+                  <VibeAvatar3DViewer ref={avatarViewerRef} avatar={avatar} />
                 </div>
+                <button onClick={captureAsProfilePicture} disabled={savingPicture} className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold py-2.5 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"><Camera className="w-3.5 h-3.5" />{savingPicture ? 'Saving...' : 'Capture as Profile Picture'}</button>
+                {pictureUrl && <div className="flex items-center gap-2 text-[10px] text-slate-500"><img src={pictureUrl} alt="profile" className="w-8 h-8 rounded-full object-cover border border-slate-700" /> Current profile picture</div>}
               </div>
               <div className="space-y-4">
-                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Face Expression</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.face.map((f) => (<button key={f} onClick={() => setAvatar({ ...avatar, face: f })} className={`text-2xl p-2 rounded-xl border ${avatar.face === f ? 'bg-purple-600/30 border-purple-500' : 'bg-slate-800 border-slate-700'}`}>{f}</button>))}</div></div>
-                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Hair Style</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.hair.map((h) => (<button key={h} onClick={() => setAvatar({ ...avatar, hair: h })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.hair === h ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{h}</button>))}</div></div>
-                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Outfit</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.outfit.map((o) => (<button key={o} onClick={() => setAvatar({ ...avatar, outfit: o })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.outfit === o ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{o}</button>))}</div></div>
-                <div><p className="text-xs font-bold text-slate-300 mb-1.5">Glowing Aura</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.aura.map((a) => (<button key={a} onClick={() => setAvatar({ ...avatar, aura: a })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.aura === a ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{a}</button>))}</div></div>
-                <button onClick={() => fireToast('Avatar saved to your profile')} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Save Avatar</button>
-                <p className="text-[10px] text-slate-500">This is a stylized 2D layered avatar. A true sculpted 3D avatar (like Ready Player Me) needs a real 3D engine integration — this demonstrates the full customization flow.</p>
+                <div className="flex gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1">
+                  {['face', 'body', 'style'].map((t) => (
+                    <button key={t} onClick={() => setAvatarPanel(t)} className={`flex-1 text-[10px] font-bold py-2 rounded-lg capitalize ${avatarPanel === t ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>{t}</button>
+                  ))}
+                </div>
+
+                {avatarPanel === 'face' && (
+                  <div className="space-y-3">
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Skin Tone</p><div className="flex gap-2 items-center">{AVATAR_OPTIONS.skinTone.map((c) => (<button key={c} onClick={() => setAvatar({ ...avatar, skinTone: c })} className={`w-8 h-8 rounded-full border-2 ${avatar.skinTone === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c }} />))}<input type="color" value={avatar.skinTone} onChange={(e) => setAvatar({ ...avatar, skinTone: e.target.value })} className="w-8 h-8 rounded-full border-2 border-slate-700 bg-transparent cursor-pointer" title="Custom skin tone" /></div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Eye Color</p><div className="flex gap-2 items-center">{AVATAR_OPTIONS.eyeColor.map((c) => (<button key={c} onClick={() => setAvatar({ ...avatar, eyeColor: c })} className={`w-8 h-8 rounded-full border-2 ${avatar.eyeColor === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c }} />))}<input type="color" value={avatar.eyeColor} onChange={(e) => setAvatar({ ...avatar, eyeColor: e.target.value })} className="w-8 h-8 rounded-full border-2 border-slate-700 bg-transparent cursor-pointer" title="Custom eye color" /></div></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Face Width</span><input type="range" min="0.8" max="1.25" step="0.01" value={avatar.faceWidth} onChange={(e) => setAvatar({ ...avatar, faceWidth: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Face Length</span><input type="range" min="0.8" max="1.25" step="0.01" value={avatar.faceLength} onChange={(e) => setAvatar({ ...avatar, faceLength: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Jaw Width</span><input type="range" min="0.75" max="1.3" step="0.01" value={avatar.jawWidth} onChange={(e) => setAvatar({ ...avatar, jawWidth: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Eye Size</span><input type="range" min="0.7" max="1.4" step="0.01" value={avatar.eyeSize} onChange={(e) => setAvatar({ ...avatar, eyeSize: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Eye Spacing</span><input type="range" min="0.75" max="1.35" step="0.01" value={avatar.eyeSpacing} onChange={(e) => setAvatar({ ...avatar, eyeSpacing: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Eyebrow Thickness</span><input type="range" min="0.5" max="2" step="0.01" value={avatar.browThickness} onChange={(e) => setAvatar({ ...avatar, browThickness: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Nose Size</span><input type="range" min="0.7" max="1.5" step="0.01" value={avatar.noseSize} onChange={(e) => setAvatar({ ...avatar, noseSize: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Ear Size</span><input type="range" min="0.6" max="1.6" step="0.01" value={avatar.earSize} onChange={(e) => setAvatar({ ...avatar, earSize: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Mouth Width</span><input type="range" min="0.7" max="1.35" step="0.01" value={avatar.mouthWidth} onChange={(e) => setAvatar({ ...avatar, mouthWidth: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Lip Fullness</span><input type="range" min="0.5" max="2.2" step="0.01" value={avatar.lipFullness} onChange={(e) => setAvatar({ ...avatar, lipFullness: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Expression</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.expression.map((e) => (<button key={e} onClick={() => setAvatar({ ...avatar, expression: e })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.expression === e ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{e}</button>))}</div></div>
+                    <button onClick={() => setAvatar((a) => ({ ...a, faceWidth: 1, faceLength: 1, eyeSize: 1, eyeSpacing: 1, noseSize: 1, mouthWidth: 1, jawWidth: 1, earSize: 1, browThickness: 1, lipFullness: 1 }))} className="w-full bg-slate-800 text-[10px] font-bold py-2 rounded-xl">Reset Face Shape</button>
+                  </div>
+                )}
+
+                {avatarPanel === 'body' && (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Height</span><input type="range" min="0.85" max="1.15" step="0.01" value={avatar.bodyHeight} onChange={(e) => setAvatar({ ...avatar, bodyHeight: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div className="flex items-center gap-2"><span className="text-[10px] text-slate-400 w-20">Build</span><input type="range" min="0.8" max="1.35" step="0.01" value={avatar.bodyBuild} onChange={(e) => setAvatar({ ...avatar, bodyBuild: Number(e.target.value) })} className="flex-1 accent-purple-500" /></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Pose</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.pose.map((p) => (<button key={p} onClick={() => setAvatar({ ...avatar, pose: p })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.pose === p ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{p}</button>))}</div></div>
+                    <button onClick={() => setAvatar((a) => ({ ...a, bodyHeight: 1, bodyBuild: 1 }))} className="w-full bg-slate-800 text-[10px] font-bold py-2 rounded-xl">Reset Body Proportions</button>
+                  </div>
+                )}
+
+                {avatarPanel === 'style' && (
+                  <div className="space-y-3">
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Hair Style</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.hair.map((h) => (<button key={h} onClick={() => setAvatar({ ...avatar, hair: h })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.hair === h ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{h}</button>))}</div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Hair Color</p><div className="flex gap-2 items-center">{AVATAR_OPTIONS.hairColor.map((c) => (<button key={c} onClick={() => setAvatar({ ...avatar, hairColor: c })} className={`w-8 h-8 rounded-full border-2 ${avatar.hairColor === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c }} />))}<input type="color" value={avatar.hairColor} onChange={(e) => setAvatar({ ...avatar, hairColor: e.target.value })} className="w-8 h-8 rounded-full border-2 border-slate-700 bg-transparent cursor-pointer" title="Custom hair color" /></div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Outfit</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.outfit.map((o) => (<button key={o} onClick={() => setAvatar({ ...avatar, outfit: o })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.outfit === o ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{o}</button>))}</div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Outfit Color</p><div className="flex gap-2 items-center">{AVATAR_OPTIONS.outfitColor.map((c) => (<button key={c} onClick={() => setAvatar({ ...avatar, outfitColor: c })} className={`w-8 h-8 rounded-full border-2 ${avatar.outfitColor === c ? 'border-white' : 'border-slate-700'}`} style={{ backgroundColor: c }} />))}<input type="color" value={avatar.outfitColor} onChange={(e) => setAvatar({ ...avatar, outfitColor: e.target.value })} className="w-8 h-8 rounded-full border-2 border-slate-700 bg-transparent cursor-pointer" title="Custom outfit color" /></div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Accessories (wear multiple at once)</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.accessory.map((a) => (<button key={a} onClick={() => setAvatar((av) => ({ ...av, accessories: (av.accessories || []).includes(a) ? av.accessories.filter((x) => x !== a) : [...(av.accessories || []), a] }))} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${(avatar.accessories || []).includes(a) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{a}</button>))}</div></div>
+                    <div><p className="text-xs font-bold text-slate-300 mb-1.5">Glowing Aura</p><div className="flex gap-2 flex-wrap">{AVATAR_OPTIONS.aura.map((a) => (<button key={a} onClick={() => setAvatar({ ...avatar, aura: a })} className={`text-[10px] font-bold px-3 py-1.5 rounded-xl border ${avatar.aura === a ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>{a}</button>))}</div></div>
+                  </div>
+                )}
+
+                <button onClick={saveAvatar} disabled={avatarSaving} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-50">{avatarSaving ? 'Saving...' : 'Save Avatar'}</button>
+                <p className="text-[10px] text-slate-500">Drag to rotate, scroll to zoom. Every slider updates the live 3D model in real time. Built with real geometry — this is VibeSpace's own avatar, not a licensed asset pack.</p>
               </div>
             </div>
           </div>
@@ -1378,7 +1842,15 @@ export default function App() {
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
               <textarea value={postDraft} onChange={(e) => setPostDraft(e.target.value)} placeholder="Share an update, a feeling, a photo caption..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm h-20" />
               <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-4 h-4 text-slate-500" /><span className="text-[10px] text-slate-500">Tag people:</span>{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleMention(u)} className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${postMentions.includes(u) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>@{u}</button>))}</div>
-              <button onClick={submitPost} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
+              <input ref={postFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handlePostFileSelect} />
+              <div className="flex items-center gap-2">
+                <button onClick={() => postFileRef.current?.click()} disabled={postUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2.5 rounded-xl disabled:opacity-50">{postUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                <button
+                  onClick={() => recordingFor === 'post' ? stopVoiceRecording('post') : startVoiceRecording('post')}
+                  className={`text-[10px] font-bold px-3 py-2.5 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'post' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                ><Mic className="w-3.5 h-3.5" />{recordingFor === 'post' ? 'Stop & Send' : 'Voice Note'}</button>
+                <button onClick={() => submitPost()} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
+              </div>
             </div>
             <div className="space-y-4">
               {feedLoading && <p className="text-xs text-slate-500 text-center">Loading feed...</p>}
@@ -1387,6 +1859,9 @@ export default function App() {
                 <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
                   <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
                   <p className="text-sm text-slate-300">{p.text}</p>
+                  {p.media_url && p.media_type === 'video' && <video src={p.media_url} controls className="rounded-xl max-h-80 w-full object-cover" />}
+                  {p.media_url && p.media_type === 'voice' && <audio src={p.media_url} controls className="w-full" />}
+                  {p.media_url && (p.media_type === 'image' || p.media_type === 'gif') && <img src={p.media_url} alt="post media" className="rounded-xl max-h-80 w-full object-cover" />}
                   {p.mentions.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {p.mentions.map((m) => `@${m}`).join(', ')}</p>}
                   {Object.keys(p.reactions).length > 0 && (
                     <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
@@ -1404,7 +1879,8 @@ export default function App() {
                           {c.text && <p className="text-xs text-slate-300">{c.text}</p>}
                           {c.mentions?.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {c.mentions.map((m) => `@${m}`).join(', ')}</p>}
                           {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
-                          {c.media_url && c.media_type !== 'video' && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
+                          {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
+                          {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
                           {Object.keys(c.reactionCounts || {}).length > 0 && (
                             <div className="flex flex-wrap gap-1.5">{Object.entries(c.reactionCounts).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[9px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
                           )}
@@ -1416,9 +1892,13 @@ export default function App() {
                       <div className="space-y-2">
                         <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs h-14" />
                         <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-3.5 h-3.5 text-slate-500" />{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleCommentMention(u)} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border ${commentMentions.includes(u) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>@{u}</button>))}</div>
-                        <input ref={commentFileRef} type="file" accept="image/*,video/*" className="hidden" onChange={(e) => handleCommentFileSelect(e, p.id)} />
+                        <input ref={commentFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={(e) => handleCommentFileSelect(e, p.id)} />
                         <div className="flex items-center gap-2">
                           <button onClick={() => commentFileRef.current?.click()} disabled={commentUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2 rounded-xl disabled:opacity-50">{commentUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                          <button
+                            onClick={() => recordingFor === p.id ? stopVoiceRecording(p.id) : startVoiceRecording(p.id)}
+                            className={`text-[10px] font-bold px-3 py-2 rounded-xl border flex items-center gap-1.5 ${recordingFor === p.id ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                          ><Mic className="w-3.5 h-3.5" />{recordingFor === p.id ? 'Stop' : 'Voice'}</button>
                           <button onClick={() => submitComment(p.id)} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold py-2 rounded-xl">Comment</button>
                         </div>
                       </div>
@@ -1504,7 +1984,7 @@ export default function App() {
         {activeTab === 'profile' && (
           <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 flex items-center gap-6 flex-wrap">
-              <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-3xl font-black text-white shadow-xl relative">{userProfile.name[0]}{userProfile.verified && <ShieldCheck className="w-6 h-6 text-emerald-400 bg-slate-900 rounded-full absolute -bottom-1 -right-1" />}</div>
+              <div className="w-24 h-24 rounded-3xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-3xl font-black text-white shadow-xl relative overflow-hidden">{pictureUrl ? <img src={pictureUrl} alt="avatar" className="w-full h-full object-cover" /> : userProfile.name[0]}{userProfile.verified && <ShieldCheck className="w-6 h-6 text-emerald-400 bg-slate-900 rounded-full absolute -bottom-1 -right-1" />}</div>
               <div className="flex-1"><h3 className="text-xl font-bold text-slate-100">{userProfile.name}</h3><p className="text-xs text-purple-400 mt-1">{userProfile.activeBadge}</p></div>
               <button
                 onClick={handleLogout}
