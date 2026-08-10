@@ -10,7 +10,7 @@ import {
   Ghost, BellOff, Timer, BatteryCharging, Moon, MessageCircleWarning,
   UserX, Siren, Info, TrendingUp, HeartHandshake, Hourglass, Mic2,
   Upload, Sliders, Type, StickyNote, Search, UserPlus, Lock as LockIcon,
-  MapPin, ChevronDown, MessageSquare, AtSign, PartyPopper, Award, Rss
+  MapPin, ChevronDown, MessageSquare, MessageCircle, AtSign, PartyPopper, Award, Rss
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import * as THREE from 'three';
@@ -325,7 +325,6 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
   const characterRef = useRef(null);
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
-  const [renderError, setRenderError] = useState(null);
 
   useImperativeHandle(ref, () => ({
     captureSnapshot: () => rendererRef.current?.domElement?.toDataURL('image/png') || null,
@@ -337,59 +336,51 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
     const mount = mountRef.current;
     const width = mount.clientWidth || 400, height = mount.clientHeight || 420;
 
-    let renderer, controls, alive = true, raf;
-    try {
-      const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0f0b1f);
-      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
-      camera.position.set(0, 1.15, 3.1);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x0f0b1f);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
+    camera.position.set(0, 1.15, 3.1);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-      renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-      mount.innerHTML = '';
-      mount.appendChild(renderer.domElement);
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    mount.innerHTML = '';
+    mount.appendChild(renderer.domElement);
 
-      scene.add(new THREE.AmbientLight(0xffffff, 0.55));
-      const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
-      keyLight.position.set(2, 4, 3);
-      scene.add(keyLight);
-      const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
-      rimLight.position.set(-3, 2, -2);
-      scene.add(rimLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
+    keyLight.position.set(2, 4, 3);
+    scene.add(keyLight);
+    const rimLight = new THREE.DirectionalLight(0x8b5cf6, 0.5);
+    rimLight.position.set(-3, 2, -2);
+    scene.add(rimLight);
 
-      controls = new OrbitControls(camera, renderer.domElement);
-      controls.target.set(0, 1, 0);
-      controls.enableDamping = true;
-      controls.minDistance = 1.8; controls.maxDistance = 6;
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 1, 0);
+    controls.enableDamping = true;
+    controls.minDistance = 1.8; controls.maxDistance = 6;
 
-      sceneRef.current = scene;
-      rendererRef.current = renderer;
-      cameraRef.current = camera;
-      const animate = () => {
-        if (!alive) return;
-        if (characterRef.current) {
-          if (spin) characterRef.current.rotation.y += 0.004;
-          characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
-        }
-        controls.update();
-        renderer.render(scene, camera);
-        raf = requestAnimationFrame(animate);
-      };
-      animate();
-    } catch (err) {
-      // Most common causes: WebGL unavailable/blocked on this device or browser,
-      // or too many WebGL contexts already alive (browsers cap this around 8-16).
-      console.error('VibeAvatar3DViewer: WebGL scene failed to initialize —', err);
-      setRenderError('Your browser or device couldn\u2019t start 3D rendering (WebGL). Try a different browser, or make sure hardware acceleration is enabled.');
-      return () => { alive = false; };
-    }
+    sceneRef.current = scene;
+    rendererRef.current = renderer;
+    cameraRef.current = camera;
+    let alive = true, raf;
+    const animate = () => {
+      if (!alive) return;
+      if (characterRef.current) {
+        if (spin) characterRef.current.rotation.y += 0.004;
+        characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
+      }
+      controls.update();
+      renderer.render(scene, camera);
+      raf = requestAnimationFrame(animate);
+    };
+    animate();
 
     const handleResize = () => {
-      if (!mount || !cameraRef.current || !rendererRef.current) return;
+      if (!mount) return;
       const w = mount.clientWidth || 400, h = mount.clientHeight || 420;
-      cameraRef.current.aspect = w / h; cameraRef.current.updateProjectionMatrix();
-      rendererRef.current.setSize(w, h);
+      camera.aspect = w / h; camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
 
@@ -397,37 +388,21 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
       alive = false;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', handleResize);
-      controls?.dispose();
-      renderer?.dispose();
+      controls.dispose();
+      renderer.dispose();
     };
   }, [spin]);
 
   // Rebuild the character whenever customization changes.
   useEffect(() => {
     if (!sceneRef.current) return;
-    try {
-      if (characterRef.current) { sceneRef.current.remove(characterRef.current); }
-      const group = buildVibeAvatar3D(avatar);
-      characterRef.current = group;
-      sceneRef.current.add(group);
-      setRenderError(null);
-    } catch (err) {
-      // Most common cause: the installed `three` package is older than r142 and
-      // doesn't have THREE.CapsuleGeometry yet, which this avatar's body/hair use.
-      console.error('VibeAvatar3DViewer: failed to build the avatar mesh —', err);
-      setRenderError('Couldn\u2019t build the 3D avatar — check the console for details (often means the "three" package needs updating to r142+).');
-    }
+    if (characterRef.current) { sceneRef.current.remove(characterRef.current); }
+    const group = buildVibeAvatar3D(avatar);
+    characterRef.current = group;
+    sceneRef.current.add(group);
   }, [avatar]);
 
-  return (
-    <div ref={mountRef} className="w-full h-full relative">
-      {renderError && (
-        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-          <p className="text-xs text-slate-400">{renderError}</p>
-        </div>
-      )}
-    </div>
-  );
+  return <div ref={mountRef} className="w-full h-full" />;
 });
 
 function VibeLensPanel({ filter, label, showFilterStrip, onChangeFilter, className, brightness = 100, contrast = 100, saturate = 100, beauty = 0, warmth = 0 }) {
@@ -781,11 +756,11 @@ export default function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
-      if (s) { loadProfile(s.user.id); loadFeed(); setAuthStep('done'); }
+      if (s) { loadProfile(s.user.id); loadFeed(); loadUnreadCounts(); loadMatches(); loadGroups(); loadMyMemberships(); setAuthStep('done'); }
     });
     const { data: listener } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
-      if (s) { loadProfile(s.user.id); loadFeed(); setAuthStep('done'); }
+      if (s) { loadProfile(s.user.id); loadFeed(); loadUnreadCounts(); loadMatches(); loadGroups(); loadMyMemberships(); setAuthStep('done'); }
     });
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -1022,15 +997,34 @@ export default function App() {
   const [discoverLoading, setDiscoverLoading] = useState(false);
   const [matchesList, setMatchesList] = useState([]);
   const [newMatchModal, setNewMatchModal] = useState(null);
+  const [activeChatUser, setActiveChatUser] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatDraft, setChatDraft] = useState('');
+  const [chatUploading, setChatUploading] = useState(false);
+  const [unreadByUser, setUnreadByUser] = useState({});
+  const chatFileRef = useRef(null);
+  const chatScrollRef = useRef(null);
 
   // ---------------- Communities & Feed ----------------
-  const [communities, setCommunities] = useState([
-    { id: 'c1', name: 'Late Night Gamers', type: 'public', members: 4820, desc: 'Anyone can join and drop in.' },
-    { id: 'c2', name: 'Vance Family & Close Friends', type: 'private', members: 12, desc: 'Invite-only circle.' },
-    { id: 'c3', name: 'Bollywood Karaoke Club', type: 'public', members: 2310, desc: 'Sing, vote, repeat.' }
-  ]);
+  // ---------------- Groups / Communities (real) ----------------
+  const [realGroups, setRealGroups] = useState([]);
+  const [groupMemberCounts, setGroupMemberCounts] = useState({});
+  const [myMemberships, setMyMemberships] = useState({}); // groupId -> role
+  const [groupsLoading, setGroupsLoading] = useState(false);
   const [showCreateCommunity, setShowCreateCommunity] = useState(false);
-  const [newCommunity, setNewCommunity] = useState({ name: '', type: 'public' });
+  const [newCommunity, setNewCommunity] = useState({ name: '', description: '', type: 'public' });
+  const [activeGroupId, setActiveGroupId] = useState(null);
+  const [groupView, setGroupView] = useState('feed'); // feed | chat | requests
+  const [groupPosts, setGroupPosts] = useState([]);
+  const [groupPostDraft, setGroupPostDraft] = useState('');
+  const [groupPostUploading, setGroupPostUploading] = useState(false);
+  const groupPostFileRef = useRef(null);
+  const [groupJoinRequests, setGroupJoinRequests] = useState([]);
+  const [groupChatMessages, setGroupChatMessages] = useState([]);
+  const [groupChatDraft, setGroupChatDraft] = useState('');
+  const [groupChatUploading, setGroupChatUploading] = useState(false);
+  const groupChatFileRef = useRef(null);
+  const groupChatScrollRef = useRef(null);
 
   const [feedPosts, setFeedPosts] = useState([]);
   const [feedLoading, setFeedLoading] = useState(false);
@@ -1238,6 +1232,21 @@ export default function App() {
       const media = await uploadMediaFile(file);
       if (media) await submitPost(media);
       setPostUploading(false);
+    } else if (target === 'chat') {
+      setChatUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await sendChatMessage(media);
+      setChatUploading(false);
+    } else if (target === 'grouppost') {
+      setGroupPostUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await submitGroupPost(media);
+      setGroupPostUploading(false);
+    } else if (target === 'groupchat') {
+      setGroupChatUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await sendGroupChatMessage(media);
+      setGroupChatUploading(false);
     } else {
       setCommentUploading(true);
       const media = await uploadMediaFile(file);
@@ -1366,6 +1375,231 @@ export default function App() {
       if (match) { setNewMatchModal(profile); loadMatches(); }
     }
   };
+
+  // ---------------- Chat (real-time DMs with matched users) ----------------
+  const loadUnreadCounts = async () => {
+    if (!session) return;
+    const { data } = await supabase.from('messages').select('sender_id').eq('recipient_id', session.user.id).is('read_at', null);
+    const counts = {};
+    (data || []).forEach((m) => { counts[m.sender_id] = (counts[m.sender_id] || 0) + 1; });
+    setUnreadByUser(counts);
+  };
+
+  const openChatWith = async (otherUser) => {
+    if (!session) return;
+    setActiveChatUser(otherUser);
+    const { data } = await supabase
+      .from('messages')
+      .select('*')
+      .or(`and(sender_id.eq.${session.user.id},recipient_id.eq.${otherUser.id}),and(sender_id.eq.${otherUser.id},recipient_id.eq.${session.user.id})`)
+      .order('created_at', { ascending: true });
+    setChatMessages(data || []);
+    // Mark their messages to me as read.
+    await supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('sender_id', otherUser.id).eq('recipient_id', session.user.id).is('read_at', null);
+    setUnreadByUser((u) => ({ ...u, [otherUser.id]: 0 }));
+    setTimeout(() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight }), 100);
+  };
+
+  const sendChatMessage = async (media) => {
+    if (!session || !activeChatUser) return;
+    if (!chatDraft.trim() && !media) return;
+    const text = chatDraft;
+    setChatDraft('');
+    const { data, error } = await supabase
+      .from('messages')
+      .insert({ sender_id: session.user.id, recipient_id: activeChatUser.id, text, media_url: media?.mediaUrl || null, media_type: media?.mediaType || null })
+      .select()
+      .single();
+    if (error) { fireToast('Could not send — try again'); return; }
+    setChatMessages((m) => [...m, data]);
+    setTimeout(() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+  };
+
+  const handleChatFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setChatUploading(true);
+    const media = await uploadMediaFile(file);
+    if (media) await sendChatMessage(media);
+    setChatUploading(false);
+  };
+
+  // Live delivery: subscribe once per session, append any message involving me to the open thread
+  // (or bump the unread count if it's from someone whose thread isn't currently open).
+  useEffect(() => {
+    if (!session) return;
+    const channel = supabase
+      .channel('messages-' + session.user.id)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `recipient_id=eq.${session.user.id}` }, (payload) => {
+        const msg = payload.new;
+        setActiveChatUser((current) => {
+          if (current && msg.sender_id === current.id) {
+            setChatMessages((m) => (m.some((x) => x.id === msg.id) ? m : [...m, msg]));
+            supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', msg.id).then(() => {});
+            setTimeout(() => chatScrollRef.current?.scrollTo({ top: chatScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+          } else {
+            setUnreadByUser((u) => ({ ...u, [msg.sender_id]: (u[msg.sender_id] || 0) + 1 }));
+          }
+          return current;
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [session]);
+
+  // ---------------- Groups / Communities ----------------
+  const loadGroups = async () => {
+    setGroupsLoading(true);
+    const { data } = await supabase.from('groups').select('*').order('created_at', { ascending: false });
+    setRealGroups(data || []);
+    const { data: allMembers } = await supabase.from('group_members').select('group_id');
+    const counts = {};
+    (allMembers || []).forEach((m) => { counts[m.group_id] = (counts[m.group_id] || 0) + 1; });
+    setGroupMemberCounts(counts);
+    setGroupsLoading(false);
+  };
+
+  const loadMyMemberships = async () => {
+    if (!session) return;
+    const { data } = await supabase.from('group_members').select('group_id, role').eq('user_id', session.user.id);
+    const map = {};
+    (data || []).forEach((m) => { map[m.group_id] = m.role; });
+    setMyMemberships(map);
+  };
+
+  const createGroup = async () => {
+    if (!session || !newCommunity.name.trim()) return;
+    const { data, error } = await supabase
+      .from('groups')
+      .insert({ name: newCommunity.name, description: newCommunity.description, type: newCommunity.type, creator_id: session.user.id })
+      .select()
+      .single();
+    if (error) { fireToast('Could not create group — try again'); return; }
+    setRealGroups((g) => [data, ...g]);
+    setMyMemberships((m) => ({ ...m, [data.id]: 'owner' }));
+    setGroupMemberCounts((c) => ({ ...c, [data.id]: 1 }));
+    setShowCreateCommunity(false);
+    setNewCommunity({ name: '', description: '', type: 'public' });
+    fireToast(`✨ Created ${data.name}`);
+  };
+
+  const joinPublicGroup = async (group) => {
+    if (!session) return;
+    const { error } = await supabase.from('group_members').insert({ group_id: group.id, user_id: session.user.id, role: 'member' });
+    if (error) { fireToast('Could not join — try again'); return; }
+    setMyMemberships((m) => ({ ...m, [group.id]: 'member' }));
+    setGroupMemberCounts((c) => ({ ...c, [group.id]: (c[group.id] || 0) + 1 }));
+    fireToast(`Joined ${group.name}`);
+  };
+
+  const requestToJoinPrivateGroup = async (group) => {
+    if (!session) return;
+    const { error } = await supabase.from('group_join_requests').insert({ group_id: group.id, user_id: session.user.id });
+    fireToast(error ? 'Could not send request — try again' : `Request sent to ${group.name} admins`);
+  };
+
+  const loadGroupFeed = async (groupId) => {
+    const { data: posts, error } = await supabase.from('posts').select('*').eq('group_id', groupId).order('created_at', { ascending: false });
+    if (error || !posts) { setGroupPosts([]); return; }
+    const postIds = posts.map((p) => p.id);
+    const { data: reactions } = await supabase.from('post_reactions').select('post_id, reaction').in('post_id', postIds.length ? postIds : ['00000000-0000-0000-0000-000000000000']);
+    const withReactions = posts.map((p) => {
+      const mine = (reactions || []).filter((r) => r.post_id === p.id);
+      const reactionCounts = {};
+      mine.forEach((r) => { reactionCounts[r.reaction] = (reactionCounts[r.reaction] || 0) + 1; });
+      return { id: p.id, user: p.author_name, text: p.text, comments: p.comments, mentions: p.mentions || [], reactions: reactionCounts, media_url: p.media_url, media_type: p.media_type };
+    });
+    setGroupPosts(withReactions);
+  };
+
+  const submitGroupPost = async (media) => {
+    if (!session || !activeGroupId) return;
+    if (!groupPostDraft.trim() && !media) return;
+    const text = groupPostDraft;
+    setGroupPostDraft('');
+    const { data, error } = await supabase
+      .from('posts')
+      .insert({ author_id: session.user.id, author_name: userProfile.name, text, mentions: [], group_id: activeGroupId, media_url: media?.mediaUrl || null, media_type: media?.mediaType || null })
+      .select()
+      .single();
+    if (error) { fireToast('Could not post — try again'); return; }
+    setGroupPosts((p) => [{ id: data.id, user: data.author_name, text: data.text, comments: 0, mentions: [], reactions: {}, media_url: data.media_url, media_type: data.media_type }, ...p]);
+  };
+
+  const handleGroupPostFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setGroupPostUploading(true);
+    const media = await uploadMediaFile(file);
+    if (media) await submitGroupPost(media);
+    setGroupPostUploading(false);
+  };
+
+  const loadGroupRequests = async (groupId) => {
+    const { data } = await supabase.from('group_join_requests').select('*, profiles:user_id(name)').eq('group_id', groupId).eq('status', 'pending');
+    setGroupJoinRequests(data || []);
+  };
+
+  const approveGroupRequest = async (requestId, groupId) => {
+    const { error } = await supabase.rpc('approve_group_join_request', { request_id: requestId });
+    if (error) { fireToast('Could not approve — try again'); return; }
+    setGroupJoinRequests((r) => r.filter((x) => x.id !== requestId));
+    fireToast('Member approved');
+  };
+
+  const openGroup = async (group) => {
+    setActiveGroupId(group.id);
+    setGroupView('feed');
+    await loadGroupFeed(group.id);
+    if (myMemberships[group.id] === 'owner' || myMemberships[group.id] === 'admin') loadGroupRequests(group.id);
+  };
+
+  const loadGroupChat = async (groupId) => {
+    const { data } = await supabase.from('group_messages').select('*').eq('group_id', groupId).order('created_at', { ascending: true });
+    setGroupChatMessages(data || []);
+    setTimeout(() => groupChatScrollRef.current?.scrollTo({ top: groupChatScrollRef.current.scrollHeight }), 100);
+  };
+
+  const sendGroupChatMessage = async (media) => {
+    if (!session || !activeGroupId) return;
+    if (!groupChatDraft.trim() && !media) return;
+    const text = groupChatDraft;
+    setGroupChatDraft('');
+    const { data, error } = await supabase
+      .from('group_messages')
+      .insert({ group_id: activeGroupId, sender_id: session.user.id, sender_name: userProfile.name, text, media_url: media?.mediaUrl || null, media_type: media?.mediaType || null })
+      .select()
+      .single();
+    if (error) { fireToast('Could not send — try again'); return; }
+    setGroupChatMessages((m) => [...m, data]);
+    setTimeout(() => groupChatScrollRef.current?.scrollTo({ top: groupChatScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+  };
+
+  const handleGroupChatFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setGroupChatUploading(true);
+    const media = await uploadMediaFile(file);
+    if (media) await sendGroupChatMessage(media);
+    setGroupChatUploading(false);
+  };
+
+  // Live delivery for whichever group's chat is currently open.
+  useEffect(() => {
+    if (!session || !activeGroupId || groupView !== 'chat') return;
+    loadGroupChat(activeGroupId);
+    const channel = supabase
+      .channel('group-messages-' + activeGroupId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${activeGroupId}` }, (payload) => {
+        setGroupChatMessages((m) => (m.some((x) => x.id === payload.new.id) ? m : [...m, payload.new]));
+        setTimeout(() => groupChatScrollRef.current?.scrollTo({ top: groupChatScrollRef.current.scrollHeight, behavior: 'smooth' }), 50);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [session, activeGroupId, groupView]);
 
   const screenMin = Math.floor(screenSeconds / 60);
   const screenPct = Math.min(100, Math.round((screenMin / dailyLimitMin) * 100));
@@ -1513,11 +1747,12 @@ export default function App() {
           <div className="bg-slate-900 border border-slate-700 rounded-3xl p-7 max-w-sm w-full space-y-3">
             <div className="flex items-center justify-between"><h3 className="font-bold text-base">Create Community</h3><button onClick={() => setShowCreateCommunity(false)}><X className="w-4 h-4 text-slate-500" /></button></div>
             <input value={newCommunity.name} onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })} placeholder="Community name" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm" />
+            <textarea value={newCommunity.description} onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })} placeholder="What's this community about?" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm h-16" />
             <div className="flex gap-2">
               <button onClick={() => setNewCommunity({ ...newCommunity, type: 'public' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'public' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>🌐 Public — anyone can join</button>
-              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'private' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'private' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>🔒 Private — invite only</button>
+              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'private' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'private' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>🔒 Private — request to join</button>
             </div>
-            <button onClick={() => { if (newCommunity.name) { setCommunities((c) => [...c, { id: 'c' + Date.now(), name: newCommunity.name, type: newCommunity.type, members: 1, desc: 'Just created' }]); setShowCreateCommunity(false); setNewCommunity({ name: '', type: 'public' }); } }} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Create</button>
+            <button onClick={createGroup} disabled={!newCommunity.name.trim()} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-40">Create</button>
           </div>
         </div>
       )}
@@ -1540,6 +1775,7 @@ export default function App() {
               { id: 'lens', label: 'VibeLens Studio', icon: Camera },
               { id: 'avatar', label: 'Avatar Studio', icon: Smile, badge: 'NEW' },
               { id: 'dating', label: 'Dating Hub', icon: Heart, badge: 'NEW' },
+              { id: 'messages', label: 'Messages', icon: MessageCircle, badge: 'NEW' },
               { id: 'feed', label: 'Feed & Posts', icon: Rss },
               { id: 'communities', label: 'Communities', icon: Users },
               { id: 'vault', label: 'Vibe Vault', icon: HardDrive, highlight: true },
@@ -1585,6 +1821,7 @@ export default function App() {
               {activeTab === 'lens' && 'VibeLens Studio'}
               {activeTab === 'avatar' && 'Avatar Studio'}
               {activeTab === 'dating' && 'Dating Hub & Compatibility'}
+              {activeTab === 'messages' && 'Messages'}
               {activeTab === 'feed' && 'Feed & Posts'}
               {activeTab === 'communities' && 'Communities'}
               {activeTab === 'vault' && 'Vibe Vault'}
@@ -1861,6 +2098,74 @@ export default function App() {
           </div>
         )}
 
+        {/* MESSAGES */}
+        {activeTab === 'messages' && (
+          <div className="p-6 max-w-5xl mx-auto w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-2 md:col-span-1">
+                <h3 className="font-bold text-sm text-slate-200 px-1">Direct Messages</h3>
+                {matchesList.length === 0 && <p className="text-xs text-slate-500 px-1 py-4 text-center">Match with someone in Dating Hub to start chatting.</p>}
+                {matchesList.map((m) => (
+                  <button key={m.id} onClick={() => openChatWith(m)} className={`w-full flex items-center gap-3 p-2.5 rounded-2xl text-left ${activeChatUser?.id === m.id ? 'bg-purple-600/20 border border-purple-500/40' : 'hover:bg-slate-800'}`}>
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-sm font-bold text-white shrink-0">{m.name[0]}</div>
+                    <span className="flex-1 text-sm font-bold text-slate-200 truncate">{m.name}</span>
+                    {unreadByUser[m.id] > 0 && <span className="bg-pink-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{unreadByUser[m.id]}</span>}
+                  </button>
+                ))}
+
+                <h3 className="font-bold text-sm text-slate-200 px-1 pt-3">Group Chats</h3>
+                {realGroups.filter((g) => myMemberships[g.id]).length === 0 && <p className="text-xs text-slate-500 px-1 py-4 text-center">Join a community to get a group chat.</p>}
+                {realGroups.filter((g) => myMemberships[g.id]).map((g) => (
+                  <button key={g.id} onClick={() => { setActiveChatUser(null); setActiveTab('communities'); openGroup(g); setGroupView('chat'); }} className="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left hover:bg-slate-800">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0"><Users className="w-4 h-4" /></div>
+                    <span className="flex-1 text-sm font-bold text-slate-200 truncate">{g.name}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col md:col-span-2 h-[560px]">
+                {!activeChatUser && <div className="flex-1 flex items-center justify-center text-xs text-slate-500">Pick a direct message conversation to start chatting, or open a Group Chat (jumps to that community).</div>}
+                {activeChatUser && (
+                  <>
+                    <div className="p-4 border-b border-slate-800 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{activeChatUser.name[0]}</div>
+                      <span className="text-sm font-bold text-slate-200">{activeChatUser.name}</span>
+                    </div>
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+                      {chatMessages.length === 0 && <p className="text-xs text-slate-500 text-center py-6">Say hi to {activeChatUser.name}.</p>}
+                      {chatMessages.map((msg) => {
+                        const mine = msg.sender_id === session?.user?.id;
+                        return (
+                          <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1.5 ${mine ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                              {msg.text && <p className="text-sm">{msg.text}</p>}
+                              {msg.media_url && msg.media_type === 'video' && <video src={msg.media_url} controls className="rounded-xl max-h-64 w-full object-cover" />}
+                              {msg.media_url && msg.media_type === 'voice' && <audio src={msg.media_url} controls className="w-full" />}
+                              {msg.media_url && (msg.media_type === 'image' || msg.media_type === 'gif') && <img src={msg.media_url} alt="attachment" className="rounded-xl max-h-64 w-full object-cover" />}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="p-3 border-t border-slate-800 space-y-2">
+                      <input ref={chatFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleChatFileSelect} />
+                      <div className="flex items-center gap-2">
+                        <input value={chatDraft} onChange={(e) => setChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }} placeholder="Type a message..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm" />
+                        <button onClick={() => chatFileRef.current?.click()} disabled={chatUploading} className="bg-slate-800 border border-slate-700 text-slate-300 p-2.5 rounded-xl disabled:opacity-50" title="Photo / GIF / Video"><Camera className="w-4 h-4" /></button>
+                        <button
+                          onClick={() => recordingFor === 'chat' ? stopVoiceRecording('chat') : startVoiceRecording('chat')}
+                          className={`p-2.5 rounded-xl border ${recordingFor === 'chat' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                        ><Mic className="w-4 h-4" /></button>
+                        <button onClick={() => sendChatMessage()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2.5 rounded-xl"><Send className="w-4 h-4" /></button>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* FEED */}
         {activeTab === 'feed' && (
           <div className="p-6 max-w-2xl mx-auto w-full space-y-6">
@@ -1936,20 +2241,148 @@ export default function App() {
         )}
 
         {/* COMMUNITIES */}
-        {activeTab === 'communities' && (
+        {activeTab === 'communities' && !activeGroupId && (
           <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
-            <div className="flex justify-between items-center"><p className="text-xs text-slate-400">Public communities anyone can join, or private ones just for friends & family.</p><button onClick={() => setShowCreateCommunity(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Create</button></div>
+            <div className="flex justify-between items-center"><p className="text-xs text-slate-400">Public communities anyone can join, or private ones by request.</p><button onClick={() => setShowCreateCommunity(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Create</button></div>
+            {groupsLoading && <p className="text-xs text-slate-500 text-center py-6">Loading communities...</p>}
+            {!groupsLoading && realGroups.length === 0 && <p className="text-xs text-slate-500 text-center py-6">No communities yet — create the first one.</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {communities.map((c) => (
-                <div key={c.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
-                  <div className="flex justify-between items-start"><h4 className="font-bold text-sm text-slate-100">{c.name}</h4>{c.type === 'private' ? <LockIcon className="w-4 h-4 text-amber-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}</div>
-                  <p className="text-xs text-slate-400">{c.desc}</p>
-                  <div className="flex justify-between items-center pt-2"><span className="text-[10px] text-slate-500">{c.members.toLocaleString()} members</span><button onClick={() => fireToast(c.type === 'private' ? 'Request sent to community admins' : `Joined ${c.name}`)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">{c.type === 'private' ? 'Request to Join' : 'Join'}</button></div>
-                </div>
-              ))}
+              {realGroups.map((c) => {
+                const isMember = !!myMemberships[c.id];
+                return (
+                  <div key={c.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
+                    <div className="flex justify-between items-start"><h4 className="font-bold text-sm text-slate-100">{c.name}</h4>{c.type === 'private' ? <LockIcon className="w-4 h-4 text-amber-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}</div>
+                    <p className="text-xs text-slate-400">{c.description}</p>
+                    <div className="flex justify-between items-center pt-2">
+                      <span className="text-[10px] text-slate-500">{(groupMemberCounts[c.id] || 0).toLocaleString()} members</span>
+                      {isMember ? (
+                        <button onClick={() => openGroup(c)} className="bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg">Open</button>
+                      ) : c.type === 'private' ? (
+                        <button onClick={() => requestToJoinPrivateGroup(c)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Request to Join</button>
+                      ) : (
+                        <button onClick={() => joinPublicGroup(c)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Join</button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
+
+        {activeTab === 'communities' && activeGroupId && (() => {
+          const group = realGroups.find((g) => g.id === activeGroupId);
+          const myRole = myMemberships[activeGroupId];
+          const isAdmin = myRole === 'owner' || myRole === 'admin';
+          if (!group) return null;
+          return (
+            <div className="p-6 max-w-3xl mx-auto w-full space-y-4">
+              <button onClick={() => setActiveGroupId(null)} className="text-xs text-slate-400 flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> All Communities</button>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div><h3 className="font-bold text-lg text-slate-100">{group.name}</h3><p className="text-xs text-slate-400">{group.description}</p></div>
+                <div className="flex gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1">
+                  <button onClick={() => setGroupView('feed')} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'feed' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Feed</button>
+                  <button onClick={() => setGroupView('chat')} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'chat' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Group Chat</button>
+                  {isAdmin && <button onClick={() => { setGroupView('requests'); loadGroupRequests(activeGroupId); }} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'requests' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Requests{groupJoinRequests.length > 0 ? ` (${groupJoinRequests.length})` : ''}</button>}
+                </div>
+              </div>
+
+              {groupView === 'feed' && (
+                <div className="space-y-6">
+                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
+                    <textarea value={groupPostDraft} onChange={(e) => setGroupPostDraft(e.target.value)} placeholder={`Share something with ${group.name}...`} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm h-20" />
+                    <input ref={groupPostFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleGroupPostFileSelect} />
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => groupPostFileRef.current?.click()} disabled={groupPostUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2.5 rounded-xl disabled:opacity-50">{groupPostUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                      <button onClick={() => recordingFor === 'grouppost' ? stopVoiceRecording('grouppost') : startVoiceRecording('grouppost')} className={`text-[10px] font-bold px-3 py-2.5 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'grouppost' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}><Mic className="w-3.5 h-3.5" />{recordingFor === 'grouppost' ? 'Stop & Send' : 'Voice Note'}</button>
+                      <button onClick={() => submitGroupPost()} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    {groupPosts.length === 0 && <p className="text-xs text-slate-500 text-center">No posts yet in this community.</p>}
+                    {groupPosts.map((p) => (
+                      <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                        <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
+                        <p className="text-sm text-slate-300">{p.text}</p>
+                        {p.media_url && p.media_type === 'video' && <video src={p.media_url} controls className="rounded-xl max-h-80 w-full object-cover" />}
+                        {p.media_url && p.media_type === 'voice' && <audio src={p.media_url} controls className="w-full" />}
+                        {p.media_url && (p.media_type === 'image' || p.media_type === 'gif') && <img src={p.media_url} alt="post media" className="rounded-xl max-h-80 w-full object-cover" />}
+                        {Object.keys(p.reactions).length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
+                        )}
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addPostReaction(p.id, r.id)} className="text-base hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                          <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</button>
+                        </div>
+                        {openCommentsFor === p.id && (
+                          <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+                            {(commentsByPost[p.id] || []).map((c) => (
+                              <div key={c.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
+                                <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">{c.author_name[0]}</div><span className="text-xs font-bold text-slate-200">{c.author_name}</span></div>
+                                {c.text && <p className="text-xs text-slate-300">{c.text}</p>}
+                                {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
+                                {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
+                                {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
+                                <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                              </div>
+                            ))}
+                            <div className="flex items-center gap-2">
+                              <input value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs" />
+                              <button onClick={() => submitComment(p.id)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-3 py-2 rounded-xl">Send</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {groupView === 'chat' && (
+                <div className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col h-[520px]">
+                  <div ref={groupChatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+                    {groupChatMessages.length === 0 && <p className="text-xs text-slate-500 text-center py-6">No messages yet — say hi to the group.</p>}
+                    {groupChatMessages.map((msg) => {
+                      const mine = msg.sender_id === session?.user?.id;
+                      return (
+                        <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1 ${mine ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                            {!mine && <p className="text-[10px] font-bold opacity-70">{msg.sender_name}</p>}
+                            {msg.text && <p className="text-sm">{msg.text}</p>}
+                            {msg.media_url && msg.media_type === 'video' && <video src={msg.media_url} controls className="rounded-xl max-h-64 w-full object-cover" />}
+                            {msg.media_url && msg.media_type === 'voice' && <audio src={msg.media_url} controls className="w-full" />}
+                            {msg.media_url && (msg.media_type === 'image' || msg.media_type === 'gif') && <img src={msg.media_url} alt="attachment" className="rounded-xl max-h-64 w-full object-cover" />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className="p-3 border-t border-slate-800">
+                    <input ref={groupChatFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleGroupChatFileSelect} />
+                    <div className="flex items-center gap-2">
+                      <input value={groupChatDraft} onChange={(e) => setGroupChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendGroupChatMessage(); }} placeholder="Message the group..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm" />
+                      <button onClick={() => groupChatFileRef.current?.click()} disabled={groupChatUploading} className="bg-slate-800 border border-slate-700 text-slate-300 p-2.5 rounded-xl disabled:opacity-50"><Camera className="w-4 h-4" /></button>
+                      <button onClick={() => recordingFor === 'groupchat' ? stopVoiceRecording('groupchat') : startVoiceRecording('groupchat')} className={`p-2.5 rounded-xl border ${recordingFor === 'groupchat' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}><Mic className="w-4 h-4" /></button>
+                      <button onClick={() => sendGroupChatMessage()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2.5 rounded-xl"><Send className="w-4 h-4" /></button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {groupView === 'requests' && isAdmin && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+                  {groupJoinRequests.length === 0 && <p className="text-xs text-slate-500 text-center py-4">No pending requests.</p>}
+                  {groupJoinRequests.map((r) => (
+                    <div key={r.id} className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl p-3">
+                      <span className="text-sm font-bold text-slate-200">{r.profiles?.name || 'Someone'}</span>
+                      <button onClick={() => approveGroupRequest(r.id, activeGroupId)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* VAULT */}
         {activeTab === 'vault' && (
