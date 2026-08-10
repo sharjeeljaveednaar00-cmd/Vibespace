@@ -15,6 +15,7 @@ import {
 import { supabase } from './supabaseClient';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import ErrorBoundary from './ErrorBoundary.jsx';
 
 // =========================================================================
 // SHARED AR RENDERING — used by live camera views AND the Lens Studio editor
@@ -325,6 +326,7 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
   const characterRef = useRef(null);
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
+  const [ready, setReady] = useState(false);
 
   useImperativeHandle(ref, () => ({
     captureSnapshot: () => rendererRef.current?.domElement?.toDataURL('image/png') || null,
@@ -341,11 +343,23 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 100);
     camera.position.set(0, 1.15, 3.1);
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    } catch (e) {
+      // Thrown when the browser refuses to create another WebGL context (common on mobile
+      // after several 3D/camera panels have been opened in the same session). Surface it
+      // clearly so the error boundary shows a real message instead of a blank screen.
+      throw new Error('Could not start the 3D view (WebGL context unavailable): ' + e.message);
+    }
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     mount.innerHTML = '';
     mount.appendChild(renderer.domElement);
+
+    let contextLost = false;
+    const handleContextLost = (e) => { e.preventDefault(); contextLost = true; };
+    renderer.domElement.addEventListener('webglcontextlost', handleContextLost);
 
     scene.add(new THREE.AmbientLight(0xffffff, 0.55));
     const keyLight = new THREE.DirectionalLight(0xffffff, 0.9);
@@ -363,9 +377,10 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
     sceneRef.current = scene;
     rendererRef.current = renderer;
     cameraRef.current = camera;
+    setReady(true);
     let alive = true, raf;
     const animate = () => {
-      if (!alive) return;
+      if (!alive || contextLost) return;
       if (characterRef.current) {
         if (spin) characterRef.current.rotation.y += 0.004;
         characterRef.current.position.y = Math.sin(Date.now() * 0.0015) * 0.02; // gentle idle bob
@@ -388,8 +403,10 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
       alive = false;
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', handleResize);
+      renderer.domElement.removeEventListener('webglcontextlost', handleContextLost);
       controls.dispose();
       renderer.dispose();
+      renderer.forceContextLoss(); // proactively free the browser-level GL context slot, not just Three.js's internal state
     };
   }, [spin]);
 
@@ -402,7 +419,17 @@ const VibeAvatar3DViewer = forwardRef(function VibeAvatar3DViewer({ avatar, spin
     sceneRef.current.add(group);
   }, [avatar]);
 
-  return <div ref={mountRef} className="w-full h-full" />;
+  return (
+    <div className="relative w-full h-full">
+      <div ref={mountRef} className="w-full h-full" />
+      {!ready && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900">
+          <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-[10px] text-slate-500">Loading 3D avatar...</p>
+        </div>
+      )}
+    </div>
+  );
 });
 
 function VibeLensPanel({ filter, label, showFilterStrip, onChangeFilter, className, brightness = 100, contrast = 100, saturate = 100, beauty = 0, warmth = 0 }) {
@@ -837,6 +864,7 @@ export default function App() {
   }, [verifyProgress, authStep]);
 
   const [activeTab, setActiveTab] = useState('vibestage');
+  const [webglRetryKey, setWebglRetryKey] = useState(0);
 
   useEffect(() => {
     if (activeTab === 'dating' && session) { loadDiscoverQueue(); loadMatches(); }
@@ -1882,7 +1910,9 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-[380px]">
-              <VibeLensPanel filter={selectedFilter} label="You" showFilterStrip onChangeFilter={setSelectedFilter} className="min-h-[380px]" />
+                  <ErrorBoundary compact minHeight="380px" friendlyMessage="The camera view couldn't start — this can happen if too many 3D/camera panels were opened this session, or camera permission was denied. Tap Try Again." onReset={() => setWebglRetryKey((k) => k + 1)}>
+                    <VibeLensPanel key={'lens-main-' + webglRetryKey} filter={selectedFilter} label="You" showFilterStrip onChangeFilter={setSelectedFilter} className="min-h-[380px]" />
+                  </ErrorBoundary>
               <div className="relative bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden flex flex-col items-center justify-center p-6 text-center min-h-[380px]">
                 {omegleState === 'idle' && matchCooldown === 0 && (<button onClick={startOmegleMatch} className="bg-gradient-to-r from-pink-500 to-purple-600 text-white font-extrabold text-xs px-8 py-3.5 rounded-2xl shadow-lg">Start Random Match</button>)}
                 {matchCooldown > 0 && (<div className="space-y-2 text-center"><Hourglass className="w-8 h-8 text-indigo-300 mx-auto animate-pulse" /><p className="text-xs text-indigo-300 font-bold">Mindful pause: {matchCooldown}s</p></div>)}
@@ -1936,7 +1966,9 @@ export default function App() {
               <div className="space-y-3">
                 <h3 className="font-bold text-sm text-slate-200">VibeLens — Live Camera + Face-Tracked Filters</h3>
                 <div className="vibelens-canvas">
-                  <VibeLensPanel filter={selectedFilter} showFilterStrip onChangeFilter={setSelectedFilter} className="aspect-video" brightness={lensBrightness} contrast={lensContrast} saturate={lensSaturate} beauty={lensBeauty} warmth={lensWarmth} />
+                  <ErrorBoundary compact minHeight="220px" friendlyMessage="The camera view couldn't start — this can happen if too many 3D/camera panels were opened this session, or camera permission was denied. Tap Try Again." onReset={() => setWebglRetryKey((k) => k + 1)}>
+                    <VibeLensPanel key={'lens-studio-' + webglRetryKey} filter={selectedFilter} showFilterStrip onChangeFilter={setSelectedFilter} className="aspect-video" brightness={lensBrightness} contrast={lensContrast} saturate={lensSaturate} beauty={lensBeauty} warmth={lensWarmth} />
+                  </ErrorBoundary>
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => captureVibeLens('vault')} className="flex-1 bg-gradient-to-r from-pink-500 to-purple-600 text-white font-bold text-xs px-5 py-2.5 rounded-xl flex items-center justify-center gap-2"><Camera className="w-4 h-4" /><span>Capture ({selfieCount.toLocaleString()} taken)</span></button>
@@ -1970,7 +2002,9 @@ export default function App() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
                 <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden min-h-[420px]">
-                  <VibeAvatar3DViewer ref={avatarViewerRef} avatar={avatar} />
+                  <ErrorBoundary compact minHeight="420px" friendlyMessage="The 3D avatar view couldn't start — this can happen if too many 3D/camera panels were opened this session. Tap Try Again, or reload the app if it keeps happening." onReset={() => setWebglRetryKey((k) => k + 1)}>
+                    <VibeAvatar3DViewer key={'avatar-' + webglRetryKey} ref={avatarViewerRef} avatar={avatar} />
+                  </ErrorBoundary>
                 </div>
                 <button onClick={captureAsProfilePicture} disabled={savingPicture} className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold py-2.5 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"><Camera className="w-3.5 h-3.5" />{savingPicture ? 'Saving...' : 'Capture as Profile Picture'}</button>
                 {pictureUrl && <div className="flex items-center gap-2 text-[10px] text-slate-500"><img src={pictureUrl} alt="profile" className="w-8 h-8 rounded-full object-cover border border-slate-700" /> Current profile picture</div>}

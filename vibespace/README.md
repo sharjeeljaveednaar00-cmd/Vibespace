@@ -69,6 +69,13 @@ From there you build/run it in Xcode or Android Studio like any native app, and 
 
 **Before shipping to app stores:** point `VITE_API_URL` at your deployed (not localhost) backend and rebuild — a phone can't reach your laptop's localhost.
 
+## Reliability: crash isolation
+The app previously had no error boundaries — a single JS error anywhere (most likely: the 3D Avatar Studio hitting a mobile browser's WebGL context limit after being visited several times in one session) would blank the *entire* app instead of just that panel. Fixed:
+- A root-level error boundary (`ErrorBoundary.jsx`) now shows a real "Something went wrong" screen with a Reload button instead of a blank page, for any crash anywhere.
+- The 3D Avatar viewer and both VibeLens camera panels are individually wrapped too, so a crash in just one of them shows an inline "Try Again" instead of taking down chat, feed, or anything else you have open.
+- The 3D avatar's WebGL context is now released properly on cleanup (`forceContextLoss()`, not just `dispose()`) — this was the likely root cause, since `dispose()` alone doesn't reliably free the browser-level GPU context slot, and mobile browsers allow far fewer simultaneous WebGL contexts than desktop.
+- If it still happens: the underlying fix reduces the odds a lot but doesn't guarantee zero — a full page reload always clears all open contexts as a fallback.
+
 ## Next steps (in priority order)
 1. Wire gifts, remaining vault memories, and VibeRoulette random matching to their own Supabase tables.
 2. Real GIF search (e.g. Giphy/Tenor API) instead of file-upload-only GIFs — needs an API key from that provider.
