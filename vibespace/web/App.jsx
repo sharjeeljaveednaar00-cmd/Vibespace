@@ -1701,8 +1701,8 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-slate-950 text-slate-100 font-sans overflow-hidden select-none relative">
-      {toast && (<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-slate-900 border border-purple-500/40 text-slate-100 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2 animate-pulse"><Info className="w-4 h-4 text-purple-400" />{toast}</div>)}
+    <div className="flex h-screen bg-[#f0f2f5] text-gray-900 font-sans overflow-hidden select-none relative">
+      {toast && (<div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-gray-900 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2"><Info className="w-4 h-4 text-blue-400" />{toast}</div>)}
 
       {showBreakNudge && (
         <div className="fixed inset-0 z-[110] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6">
@@ -1771,31 +1771,31 @@ export default function App() {
       )}
 
       {showCreateCommunity && (
-        <div className="fixed inset-0 z-[105] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-6">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-7 max-w-sm w-full space-y-3">
-            <div className="flex items-center justify-between"><h3 className="font-bold text-base">Create Community</h3><button onClick={() => setShowCreateCommunity(false)}><X className="w-4 h-4 text-slate-500" /></button></div>
-            <input value={newCommunity.name} onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })} placeholder="Community name" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm" />
-            <textarea value={newCommunity.description} onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })} placeholder="What's this community about?" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm h-16" />
+        <div className="fixed inset-0 z-[105] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-white border border-gray-200 shadow-xl rounded-2xl p-6 max-w-sm w-full space-y-3">
+            <div className="flex items-center justify-between"><h3 className="font-bold text-base text-gray-900">Create Community</h3><button onClick={() => setShowCreateCommunity(false)}><X className="w-4 h-4 text-gray-400" /></button></div>
+            <input value={newCommunity.name} onChange={(e) => setNewCommunity({ ...newCommunity, name: e.target.value })} placeholder="Community name" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+            <textarea value={newCommunity.description} onChange={(e) => setNewCommunity({ ...newCommunity, description: e.target.value })} placeholder="What's this community about?" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 h-16" />
             <div className="flex gap-2">
-              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'public' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'public' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>🌐 Public — anyone can join</button>
-              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'private' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'private' ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>🔒 Private — request to join</button>
+              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'public' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'public' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>🌐 Public — anyone can join</button>
+              <button onClick={() => setNewCommunity({ ...newCommunity, type: 'private' })} className={`flex-1 text-xs font-bold py-2.5 rounded-xl border ${newCommunity.type === 'private' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>🔒 Private — request to join</button>
             </div>
-            <button onClick={createGroup} disabled={!newCommunity.name.trim()} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-40">Create</button>
+            <button onClick={createGroup} disabled={!newCommunity.name.trim()} className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-40">Create</button>
           </div>
         </div>
       )}
 
       {/* SIDEBAR */}
-      <aside className="w-20 md:w-64 bg-slate-900 border-r border-slate-800/80 flex flex-col justify-between p-3 md:p-4 z-20 overflow-y-auto">
-        <div className="space-y-6">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 via-pink-500 to-amber-400 flex items-center justify-center shadow-lg shadow-purple-500/30"><Sparkles className="w-6 h-6 text-white" /></div>
-            <div className="hidden md:block">
-              <h1 className="font-extrabold text-lg tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-400 to-amber-300">VIBESPACE</h1>
-              <div className="flex items-center gap-1.5 text-[9px] font-bold text-emerald-400"><Wifi className="w-3 h-3 text-emerald-400" /><span>0-LAG ENGINE ({netStats.ping}ms)</span></div>
+      <aside className="w-20 md:w-72 bg-white border-r border-gray-200 flex flex-col justify-between p-3 md:p-4 z-20 overflow-y-auto shadow-sm">
+        <div className="space-y-4">
+          <div className="flex items-center gap-3 px-2 py-1">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-500 flex items-center justify-center shadow-sm shrink-0"><Sparkles className="w-5 h-5 text-white" /></div>
+            <div className="hidden md:block overflow-hidden">
+              <h1 className="font-extrabold text-lg tracking-tight text-gray-900">VibeSpace</h1>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600"><Wifi className="w-3 h-3" /><span>{netStats.ping}ms</span></div>
             </div>
           </div>
-          <nav className="space-y-1">
+          <nav className="space-y-0.5">
             {[
               { id: 'vibestage', label: 'VibeStage Circles', icon: Radio },
               { id: 'omegle', label: 'VibeRoulette 1-on-1', icon: RefreshCw, highlight: true },
@@ -1814,35 +1814,35 @@ export default function App() {
             ].map((item) => {
               const Icon = item.icon; const isActive = activeTab === item.id;
               return (
-                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all relative ${isActive ? 'bg-gradient-to-r from-purple-600/30 via-pink-600/20 to-transparent text-purple-300 border border-purple-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'}`}>
-                  <Icon className={`w-5 h-5 ${isActive ? 'text-purple-400' : 'text-slate-400'} ${item.highlight ? 'text-pink-400 animate-pulse' : ''}`} />
-                  <span className="hidden md:block flex-1 text-left">{item.label}</span>
-                  {item.badge && <span className="hidden md:inline-block text-[9px] font-black px-1.5 py-0.5 rounded-md bg-purple-500/20 text-purple-300 border border-purple-500/30">{item.badge}</span>}
+                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg font-semibold text-sm transition-all relative ${isActive ? 'bg-blue-50 text-blue-600' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  <Icon className={`w-5 h-5 shrink-0 ${isActive ? 'text-blue-600' : item.highlight ? 'text-pink-500' : 'text-gray-500'}`} />
+                  <span className="hidden md:block flex-1 text-left truncate">{item.label}</span>
+                  {item.badge && <span className="hidden md:inline-block text-[9px] font-black px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-600">{item.badge}</span>}
                 </button>
               );
             })}
           </nav>
         </div>
         <div className="space-y-2">
-          <button onClick={() => { setGhostMode(!ghostMode); fireToast(ghostMode ? 'Ghost Mode off' : '👻 Ghost Mode on'); }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-bold border ${ghostMode ? 'bg-indigo-600/30 text-indigo-300 border-indigo-500/40' : 'bg-slate-800/50 text-slate-400 border-slate-700/60'}`}><Ghost className="w-4 h-4" /><span className="hidden md:inline">{ghostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF'}</span></button>
-          <div className="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-3 space-y-3">
+          <button onClick={() => { setGhostMode(!ghostMode); fireToast(ghostMode ? 'Ghost Mode off' : '👻 Ghost Mode on'); }} className={`w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-bold border ${ghostMode ? 'bg-indigo-50 text-indigo-600 border-indigo-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}><Ghost className="w-4 h-4" /><span className="hidden md:inline">{ghostMode ? 'Ghost Mode: ON' : 'Ghost Mode: OFF'}</span></button>
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
             <div className="flex items-center gap-3">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center font-bold text-white border-2 border-purple-400">{userProfile.name[0]}</div>
-                <span className="absolute -bottom-1 -right-1 bg-amber-400 text-slate-950 font-black text-[9px] px-1 rounded-full border border-slate-900">L{userProfile.level}</span>
-                {userProfile.verified && <ShieldCheck className="w-4 h-4 text-emerald-400 absolute -top-1 -right-1 bg-slate-900 rounded-full" />}
+              <div className="relative shrink-0">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center font-bold text-white">{userProfile.name[0]}</div>
+                <span className="absolute -bottom-1 -right-1 bg-amber-400 text-gray-900 font-black text-[9px] px-1 rounded-full border-2 border-white">L{userProfile.level}</span>
+                {userProfile.verified && <ShieldCheck className="w-4 h-4 text-emerald-500 absolute -top-1 -right-1 bg-white rounded-full" />}
               </div>
-              <div className="hidden md:block overflow-hidden flex-1"><p className="text-sm font-bold truncate text-slate-200">{userProfile.name}</p><p className="text-xs text-amber-400 font-medium truncate">🪙 {vibeCoins} Coins</p></div>
+              <div className="hidden md:block overflow-hidden flex-1"><p className="text-sm font-bold truncate text-gray-900">{userProfile.name}</p><p className="text-xs text-amber-600 font-semibold truncate">🪙 {vibeCoins} Coins</p></div>
             </div>
           </div>
         </div>
       </aside>
 
       {/* MAIN */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-950 relative overflow-y-auto">
-        <header className="sticky top-0 z-10 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-6 py-4 flex items-center justify-between">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#f0f2f5] relative overflow-y-auto">
+        <header className="sticky top-0 z-10 bg-white/90 backdrop-blur-md border-b border-gray-200 px-6 py-3.5 flex items-center justify-between shadow-sm">
           <div>
-            <h2 className="text-xl font-bold text-slate-100 tracking-tight">
+            <h2 className="text-xl font-bold text-gray-900 tracking-tight">
               {activeTab === 'vibestage' && 'VibeStage Circles'}
               {activeTab === 'omegle' && 'VibeRoulette 1-on-1'}
               {activeTab === 'games' && '36 VibeSpace Games'}
@@ -1860,7 +1860,7 @@ export default function App() {
             </h2>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-slate-900 border border-amber-500/30 px-3 py-1.5 rounded-xl text-amber-400 font-bold text-xs"><Sparkles className="w-4 h-4 fill-amber-400" /><span>{userProfile.vibesCount} Vibe Sparks</span></div>
+            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-600 font-bold text-xs"><Sparkles className="w-4 h-4 fill-amber-500" /><span>{userProfile.vibesCount} Vibe Sparks</span></div>
           </div>
         </header>
 
@@ -2136,42 +2136,42 @@ export default function App() {
         {activeTab === 'messages' && (
           <div className="p-6 max-w-5xl mx-auto w-full">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-4 space-y-2 md:col-span-1">
-                <h3 className="font-bold text-sm text-slate-200 px-1">Direct Messages</h3>
-                {matchesList.length === 0 && <p className="text-xs text-slate-500 px-1 py-4 text-center">Match with someone in Dating Hub to start chatting.</p>}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-3 space-y-1 md:col-span-1">
+                <h3 className="font-bold text-sm text-gray-900 px-2 py-1">Direct Messages</h3>
+                {matchesList.length === 0 && <p className="text-xs text-gray-400 px-2 py-4 text-center">Match with someone in Dating Hub to start chatting.</p>}
                 {matchesList.map((m) => (
-                  <button key={m.id} onClick={() => openChatWith(m)} className={`w-full flex items-center gap-3 p-2.5 rounded-2xl text-left ${activeChatUser?.id === m.id ? 'bg-purple-600/20 border border-purple-500/40' : 'hover:bg-slate-800'}`}>
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-sm font-bold text-white shrink-0">{m.name[0]}</div>
-                    <span className="flex-1 text-sm font-bold text-slate-200 truncate">{m.name}</span>
-                    {unreadByUser[m.id] > 0 && <span className="bg-pink-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{unreadByUser[m.id]}</span>}
+                  <button key={m.id} onClick={() => openChatWith(m)} className={`w-full flex items-center gap-3 p-2.5 rounded-xl text-left ${activeChatUser?.id === m.id ? 'bg-blue-50' : 'hover:bg-gray-100'}`}>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0">{m.name[0]}</div>
+                    <span className="flex-1 text-sm font-bold text-gray-900 truncate">{m.name}</span>
+                    {unreadByUser[m.id] > 0 && <span className="bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shrink-0">{unreadByUser[m.id]}</span>}
                   </button>
                 ))}
 
-                <h3 className="font-bold text-sm text-slate-200 px-1 pt-3">Group Chats</h3>
-                {realGroups.filter((g) => myMemberships[g.id]).length === 0 && <p className="text-xs text-slate-500 px-1 py-4 text-center">Join a community to get a group chat.</p>}
+                <h3 className="font-bold text-sm text-gray-900 px-2 py-1 pt-3">Group Chats</h3>
+                {realGroups.filter((g) => myMemberships[g.id]).length === 0 && <p className="text-xs text-gray-400 px-2 py-4 text-center">Join a community to get a group chat.</p>}
                 {realGroups.filter((g) => myMemberships[g.id]).map((g) => (
-                  <button key={g.id} onClick={() => { setActiveChatUser(null); setActiveTab('communities'); openGroup(g); setGroupView('chat'); }} className="w-full flex items-center gap-3 p-2.5 rounded-2xl text-left hover:bg-slate-800">
-                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0"><Users className="w-4 h-4" /></div>
-                    <span className="flex-1 text-sm font-bold text-slate-200 truncate">{g.name}</span>
+                  <button key={g.id} onClick={() => { setActiveChatUser(null); setActiveTab('communities'); openGroup(g); setGroupView('chat'); }} className="w-full flex items-center gap-3 p-2.5 rounded-xl text-left hover:bg-gray-100">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0"><Users className="w-4 h-4" /></div>
+                    <span className="flex-1 text-sm font-bold text-gray-900 truncate">{g.name}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col md:col-span-2 h-[560px]">
-                {!activeChatUser && <div className="flex-1 flex items-center justify-center text-xs text-slate-500">Pick a direct message conversation to start chatting, or open a Group Chat (jumps to that community).</div>}
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col md:col-span-2 h-[560px]">
+                {!activeChatUser && <div className="flex-1 flex items-center justify-center text-xs text-gray-400 text-center px-8">Pick a direct message conversation to start chatting, or open a Group Chat (jumps to that community).</div>}
                 {activeChatUser && (
                   <>
-                    <div className="p-4 border-b border-slate-800 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{activeChatUser.name[0]}</div>
-                      <span className="text-sm font-bold text-slate-200">{activeChatUser.name}</span>
+                    <div className="p-4 border-b border-gray-100 flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white">{activeChatUser.name[0]}</div>
+                      <span className="text-sm font-bold text-gray-900">{activeChatUser.name}</span>
                     </div>
-                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-                      {chatMessages.length === 0 && <p className="text-xs text-slate-500 text-center py-6">Say hi to {activeChatUser.name}.</p>}
+                    <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-2.5">
+                      {chatMessages.length === 0 && <p className="text-xs text-gray-400 text-center py-6">Say hi to {activeChatUser.name}.</p>}
                       {chatMessages.map((msg) => {
                         const mine = msg.sender_id === session?.user?.id;
                         return (
                           <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1.5 ${mine ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                            <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1.5 ${mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                               {msg.text && <p className="text-sm">{msg.text}</p>}
                               {msg.media_url && msg.media_type === 'video' && <video src={msg.media_url} controls className="rounded-xl max-h-64 w-full object-cover" />}
                               {msg.media_url && msg.media_type === 'voice' && <audio src={msg.media_url} controls className="w-full" />}
@@ -2181,16 +2181,16 @@ export default function App() {
                         );
                       })}
                     </div>
-                    <div className="p-3 border-t border-slate-800 space-y-2">
+                    <div className="p-3 border-t border-gray-100 space-y-2">
                       <input ref={chatFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleChatFileSelect} />
                       <div className="flex items-center gap-2">
-                        <input value={chatDraft} onChange={(e) => setChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }} placeholder="Type a message..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm" />
-                        <button onClick={() => chatFileRef.current?.click()} disabled={chatUploading} className="bg-slate-800 border border-slate-700 text-slate-300 p-2.5 rounded-xl disabled:opacity-50" title="Photo / GIF / Video"><Camera className="w-4 h-4" /></button>
+                        <input value={chatDraft} onChange={(e) => setChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendChatMessage(); }} placeholder="Type a message..." className="flex-1 bg-gray-50 border border-gray-200 rounded-full px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                        <button onClick={() => chatFileRef.current?.click()} disabled={chatUploading} className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2.5 rounded-full disabled:opacity-50" title="Photo / GIF / Video"><Camera className="w-4 h-4" /></button>
                         <button
                           onClick={() => recordingFor === 'chat' ? stopVoiceRecording('chat') : startVoiceRecording('chat')}
-                          className={`p-2.5 rounded-xl border ${recordingFor === 'chat' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                          className={`p-2.5 rounded-full ${recordingFor === 'chat' ? 'bg-rose-600 text-white animate-pulse' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}
                         ><Mic className="w-4 h-4" /></button>
-                        <button onClick={() => sendChatMessage()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2.5 rounded-xl"><Send className="w-4 h-4" /></button>
+                        <button onClick={() => sendChatMessage()} className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-full"><Send className="w-4 h-4" /></button>
                       </div>
                     </div>
                   </>
@@ -2202,68 +2202,73 @@ export default function App() {
 
         {/* FEED */}
         {activeTab === 'feed' && (
-          <div className="p-6 max-w-2xl mx-auto w-full space-y-6">
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-              <textarea value={postDraft} onChange={(e) => setPostDraft(e.target.value)} placeholder="Share an update, a feeling, a photo caption..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm h-20" />
-              <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-4 h-4 text-slate-500" /><span className="text-[10px] text-slate-500">Tag people:</span>{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleMention(u)} className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${postMentions.includes(u) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>@{u}</button>))}</div>
+          <div className="p-6 max-w-2xl mx-auto w-full space-y-4">
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3">
+              <textarea value={postDraft} onChange={(e) => setPostDraft(e.target.value)} placeholder="What's on your mind?" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 h-20" />
+              <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-4 h-4 text-gray-400" /><span className="text-[10px] text-gray-400 font-semibold">Tag people:</span>{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleMention(u)} className={`px-2 py-1 rounded-lg text-[10px] font-bold border ${postMentions.includes(u) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>@{u}</button>))}</div>
+              <div className="h-px bg-gray-100" />
               <input ref={postFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handlePostFileSelect} />
               <div className="flex items-center gap-2">
-                <button onClick={() => postFileRef.current?.click()} disabled={postUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2.5 rounded-xl disabled:opacity-50">{postUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                <button onClick={() => postFileRef.current?.click()} disabled={postUploading} className="flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50"><Image className="w-4 h-4 text-emerald-500" />{postUploading ? 'Uploading...' : 'Photo/Video'}</button>
                 <button
                   onClick={() => recordingFor === 'post' ? stopVoiceRecording('post') : startVoiceRecording('post')}
-                  className={`text-[10px] font-bold px-3 py-2.5 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'post' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
-                ><Mic className="w-3.5 h-3.5" />{recordingFor === 'post' ? 'Stop & Send' : 'Voice Note'}</button>
-                <button onClick={() => submitPost()} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
+                  className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg ${recordingFor === 'post' ? 'bg-rose-50 text-rose-600 animate-pulse' : 'text-gray-600 hover:bg-gray-100'}`}
+                ><Mic className="w-4 h-4 text-purple-500" />{recordingFor === 'post' ? 'Stop & Send' : 'Voice'}</button>
+                <button onClick={() => submitPost()} className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2 rounded-lg">Post</button>
               </div>
             </div>
             <div className="space-y-4">
-              {feedLoading && <p className="text-xs text-slate-500 text-center">Loading feed...</p>}
-              {!feedLoading && feedPosts.length === 0 && <p className="text-xs text-slate-500 text-center">No posts yet — be the first to share something.</p>}
+              {feedLoading && <p className="text-xs text-gray-400 text-center py-4">Loading feed...</p>}
+              {!feedLoading && feedPosts.length === 0 && <p className="text-xs text-gray-400 text-center py-4">No posts yet — be the first to share something.</p>}
               {feedPosts.map((p) => (
-                <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
-                  <p className="text-sm text-slate-300">{p.text}</p>
-                  {p.media_url && p.media_type === 'video' && <video src={p.media_url} controls className="rounded-xl max-h-80 w-full object-cover" />}
+                <div key={p.id} className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-2.5">
+                  <div className="flex items-center gap-2.5"><div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-sm font-bold text-white shrink-0">{p.user[0]}</div><div><p className="text-sm font-bold text-gray-900 leading-tight">{p.user}</p><p className="text-[11px] text-gray-400">Just now</p></div></div>
+                  {p.text && <p className="text-sm text-gray-800 leading-relaxed">{p.text}</p>}
+                  {p.media_url && p.media_type === 'video' && <video src={p.media_url} controls className="rounded-xl max-h-80 w-full object-cover -mx-1" />}
                   {p.media_url && p.media_type === 'voice' && <audio src={p.media_url} controls className="w-full" />}
                   {p.media_url && (p.media_type === 'image' || p.media_type === 'gif') && <img src={p.media_url} alt="post media" className="rounded-xl max-h-80 w-full object-cover" />}
-                  {p.mentions.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {p.mentions.map((m) => `@${m}`).join(', ')}</p>}
+                  {p.mentions.length > 0 && <p className="text-[11px] text-blue-600 font-semibold">Tagged: {p.mentions.map((m) => `@${m}`).join(', ')}</p>}
                   {Object.keys(p.reactions).length > 0 && (
-                    <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
+                    <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[11px] font-bold bg-gray-100 px-2 py-1 rounded-full text-gray-600">{r ? r.icon : ''} {count}</span>; })}</div>
                   )}
+                  <div className="h-px bg-gray-100" />
                   <div className="flex items-center justify-between flex-wrap gap-2">
                     <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addPostReaction(p.id, r.id)} className="text-base hover:scale-125 transition-transform">{r.icon}</button>))}</div>
-                    <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</button>
+                    <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg"><MessageSquare className="w-3.5 h-3.5" /> {p.comments} Comment{p.comments === 1 ? '' : 's'}</button>
                   </div>
 
                   {openCommentsFor === p.id && (
-                    <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+                    <div className="pt-3 border-t border-gray-100 space-y-3">
                       {(commentsByPost[p.id] || []).map((c) => (
-                        <div key={c.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
-                          <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">{c.author_name[0]}</div><span className="text-xs font-bold text-slate-200">{c.author_name}</span></div>
-                          {c.text && <p className="text-xs text-slate-300">{c.text}</p>}
-                          {c.mentions?.length > 0 && <p className="text-[10px] text-cyan-300">Tagged: {c.mentions.map((m) => `@${m}`).join(', ')}</p>}
-                          {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
-                          {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
-                          {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
-                          {Object.keys(c.reactionCounts || {}).length > 0 && (
-                            <div className="flex flex-wrap gap-1.5">{Object.entries(c.reactionCounts).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[9px] font-bold bg-slate-800 px-1.5 py-0.5 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
-                          )}
-                          <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                        <div key={c.id} className="flex gap-2">
+                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0">{c.author_name[0]}</div>
+                          <div className="bg-gray-100 rounded-2xl px-3 py-2 space-y-1.5 flex-1">
+                            <span className="text-xs font-bold text-gray-900">{c.author_name}</span>
+                            {c.text && <p className="text-xs text-gray-800">{c.text}</p>}
+                            {c.mentions?.length > 0 && <p className="text-[10px] text-blue-600 font-semibold">Tagged: {c.mentions.map((m) => `@${m}`).join(', ')}</p>}
+                            {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
+                            {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
+                            {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
+                            {Object.keys(c.reactionCounts || {}).length > 0 && (
+                              <div className="flex flex-wrap gap-1">{Object.entries(c.reactionCounts).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[9px] font-bold bg-white px-1.5 py-0.5 rounded-full text-gray-600">{r ? r.icon : ''} {count}</span>; })}</div>
+                            )}
+                            <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                          </div>
                         </div>
                       ))}
-                      {(commentsByPost[p.id] || []).length === 0 && <p className="text-[10px] text-slate-500">No comments yet — say something.</p>}
+                      {(commentsByPost[p.id] || []).length === 0 && <p className="text-[11px] text-gray-400">No comments yet — say something.</p>}
 
                       <div className="space-y-2">
-                        <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs h-14" />
-                        <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-3.5 h-3.5 text-slate-500" />{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleCommentMention(u)} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border ${commentMentions.includes(u) ? 'bg-purple-600 border-purple-400 text-white' : 'bg-slate-800 border-slate-700 text-slate-400'}`}>@{u}</button>))}</div>
+                        <textarea value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 h-14" />
+                        <div className="flex items-center gap-2 flex-wrap"><AtSign className="w-3.5 h-3.5 text-gray-400" />{MOCK_USERS.map((u) => (<button key={u} onClick={() => toggleCommentMention(u)} className={`px-2 py-0.5 rounded-lg text-[9px] font-bold border ${commentMentions.includes(u) ? 'bg-blue-600 border-blue-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-500'}`}>@{u}</button>))}</div>
                         <input ref={commentFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={(e) => handleCommentFileSelect(e, p.id)} />
                         <div className="flex items-center gap-2">
-                          <button onClick={() => commentFileRef.current?.click()} disabled={commentUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2 rounded-xl disabled:opacity-50">{commentUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
+                          <button onClick={() => commentFileRef.current?.click()} disabled={commentUploading} className="text-gray-600 hover:bg-gray-100 text-[10px] font-bold px-3 py-2 rounded-lg disabled:opacity-50">{commentUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
                           <button
                             onClick={() => recordingFor === p.id ? stopVoiceRecording(p.id) : startVoiceRecording(p.id)}
-                            className={`text-[10px] font-bold px-3 py-2 rounded-xl border flex items-center gap-1.5 ${recordingFor === p.id ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                            className={`text-[10px] font-bold px-3 py-2 rounded-lg flex items-center gap-1.5 ${recordingFor === p.id ? 'bg-rose-50 text-rose-600 animate-pulse' : 'text-gray-600 hover:bg-gray-100'}`}
                           ><Mic className="w-3.5 h-3.5" />{recordingFor === p.id ? 'Stop' : 'Voice'}</button>
-                          <button onClick={() => submitComment(p.id)} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold py-2 rounded-xl">Comment</button>
+                          <button onClick={() => submitComment(p.id)} className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-4 py-2 rounded-lg">Comment</button>
                         </div>
                       </div>
                     </div>
@@ -2276,25 +2281,25 @@ export default function App() {
 
         {/* COMMUNITIES */}
         {activeTab === 'communities' && !activeGroupId && (
-          <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
-            <div className="flex justify-between items-center"><p className="text-xs text-slate-400">Public communities anyone can join, or private ones by request.</p><button onClick={() => setShowCreateCommunity(true)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold px-4 py-2 rounded-xl flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Create</button></div>
-            {groupsLoading && <p className="text-xs text-slate-500 text-center py-6">Loading communities...</p>}
-            {!groupsLoading && realGroups.length === 0 && <p className="text-xs text-slate-500 text-center py-6">No communities yet — create the first one.</p>}
+          <div className="p-6 max-w-4xl mx-auto w-full space-y-4">
+            <div className="flex justify-between items-center"><p className="text-xs text-gray-500">Public communities anyone can join, or private ones by request.</p><button onClick={() => setShowCreateCommunity(true)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5"><Plus className="w-3.5 h-3.5" /> Create</button></div>
+            {groupsLoading && <p className="text-xs text-gray-400 text-center py-6">Loading communities...</p>}
+            {!groupsLoading && realGroups.length === 0 && <p className="text-xs text-gray-400 text-center py-6">No communities yet — create the first one.</p>}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {realGroups.map((c) => {
                 const isMember = !!myMemberships[c.id];
                 return (
-                  <div key={c.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-2">
-                    <div className="flex justify-between items-start"><h4 className="font-bold text-sm text-slate-100">{c.name}</h4>{c.type === 'private' ? <LockIcon className="w-4 h-4 text-amber-400" /> : <Globe className="w-4 h-4 text-emerald-400" />}</div>
-                    <p className="text-xs text-slate-400">{c.description}</p>
+                  <div key={c.id} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 space-y-2">
+                    <div className="flex justify-between items-start"><h4 className="font-bold text-sm text-gray-900">{c.name}</h4>{c.type === 'private' ? <LockIcon className="w-4 h-4 text-amber-500" /> : <Globe className="w-4 h-4 text-emerald-500" />}</div>
+                    <p className="text-xs text-gray-500">{c.description}</p>
                     <div className="flex justify-between items-center pt-2">
-                      <span className="text-[10px] text-slate-500">{(groupMemberCounts[c.id] || 0).toLocaleString()} members</span>
+                      <span className="text-[11px] text-gray-400 font-medium">{(groupMemberCounts[c.id] || 0).toLocaleString()} members</span>
                       {isMember ? (
-                        <button onClick={() => openGroup(c)} className="bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg">Open</button>
+                        <button onClick={() => openGroup(c)} className="bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold px-3 py-1.5 rounded-lg">Open</button>
                       ) : c.type === 'private' ? (
-                        <button onClick={() => requestToJoinPrivateGroup(c)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Request to Join</button>
+                        <button onClick={() => requestToJoinPrivateGroup(c)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Request to Join</button>
                       ) : (
-                        <button onClick={() => joinPublicGroup(c)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Join</button>
+                        <button onClick={() => joinPublicGroup(c)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Join</button>
                       )}
                     </div>
                   </div>
@@ -2311,58 +2316,62 @@ export default function App() {
           if (!group) return null;
           return (
             <div className="p-6 max-w-3xl mx-auto w-full space-y-4">
-              <button onClick={() => setActiveGroupId(null)} className="text-xs text-slate-400 flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> All Communities</button>
+              <button onClick={() => setActiveGroupId(null)} className="text-xs text-gray-500 hover:text-gray-700 font-semibold flex items-center gap-1"><ChevronLeft className="w-4 h-4" /> All Communities</button>
               <div className="flex items-center justify-between flex-wrap gap-2">
-                <div><h3 className="font-bold text-lg text-slate-100">{group.name}</h3><p className="text-xs text-slate-400">{group.description}</p></div>
-                <div className="flex gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1">
-                  <button onClick={() => setGroupView('feed')} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'feed' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Feed</button>
-                  <button onClick={() => setGroupView('chat')} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'chat' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Group Chat</button>
-                  {isAdmin && <button onClick={() => { setGroupView('requests'); loadGroupRequests(activeGroupId); }} className={`text-[10px] font-bold px-3 py-2 rounded-lg ${groupView === 'requests' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Requests{groupJoinRequests.length > 0 ? ` (${groupJoinRequests.length})` : ''}</button>}
+                <div><h3 className="font-bold text-lg text-gray-900">{group.name}</h3><p className="text-xs text-gray-500">{group.description}</p></div>
+                <div className="flex gap-1 bg-white border border-gray-200 rounded-xl p-1 shadow-sm">
+                  <button onClick={() => setGroupView('feed')} className={`text-[11px] font-bold px-3 py-2 rounded-lg ${groupView === 'feed' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>Feed</button>
+                  <button onClick={() => setGroupView('chat')} className={`text-[11px] font-bold px-3 py-2 rounded-lg ${groupView === 'chat' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>Group Chat</button>
+                  {isAdmin && <button onClick={() => { setGroupView('requests'); loadGroupRequests(activeGroupId); }} className={`text-[11px] font-bold px-3 py-2 rounded-lg ${groupView === 'requests' ? 'bg-blue-600 text-white' : 'text-gray-500 hover:bg-gray-100'}`}>Requests{groupJoinRequests.length > 0 ? ` (${groupJoinRequests.length})` : ''}</button>}
                 </div>
               </div>
 
               {groupView === 'feed' && (
-                <div className="space-y-6">
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-3">
-                    <textarea value={groupPostDraft} onChange={(e) => setGroupPostDraft(e.target.value)} placeholder={`Share something with ${group.name}...`} className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm h-20" />
+                <div className="space-y-4">
+                  <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-3">
+                    <textarea value={groupPostDraft} onChange={(e) => setGroupPostDraft(e.target.value)} placeholder={`Share something with ${group.name}...`} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200 h-20" />
                     <input ref={groupPostFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleGroupPostFileSelect} />
                     <div className="flex items-center gap-2">
-                      <button onClick={() => groupPostFileRef.current?.click()} disabled={groupPostUploading} className="bg-slate-800 border border-slate-700 text-slate-300 text-[10px] font-bold px-3 py-2.5 rounded-xl disabled:opacity-50">{groupPostUploading ? 'Uploading...' : '📎 Photo / GIF / Video'}</button>
-                      <button onClick={() => recordingFor === 'grouppost' ? stopVoiceRecording('grouppost') : startVoiceRecording('grouppost')} className={`text-[10px] font-bold px-3 py-2.5 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'grouppost' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}><Mic className="w-3.5 h-3.5" />{recordingFor === 'grouppost' ? 'Stop & Send' : 'Voice Note'}</button>
-                      <button onClick={() => submitGroupPost()} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Post</button>
+                      <button onClick={() => groupPostFileRef.current?.click()} disabled={groupPostUploading} className="flex items-center gap-1.5 text-gray-600 hover:bg-gray-100 text-xs font-bold px-3 py-2 rounded-lg disabled:opacity-50"><Image className="w-4 h-4 text-emerald-500" />{groupPostUploading ? 'Uploading...' : 'Photo/Video'}</button>
+                      <button onClick={() => recordingFor === 'grouppost' ? stopVoiceRecording('grouppost') : startVoiceRecording('grouppost')} className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg ${recordingFor === 'grouppost' ? 'bg-rose-50 text-rose-600 animate-pulse' : 'text-gray-600 hover:bg-gray-100'}`}><Mic className="w-4 h-4 text-purple-500" />{recordingFor === 'grouppost' ? 'Stop & Send' : 'Voice'}</button>
+                      <button onClick={() => submitGroupPost()} className="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2 rounded-lg">Post</button>
                     </div>
                   </div>
                   <div className="space-y-4">
-                    {groupPosts.length === 0 && <p className="text-xs text-slate-500 text-center">No posts yet in this community.</p>}
+                    {groupPosts.length === 0 && <p className="text-xs text-gray-400 text-center py-4">No posts yet in this community.</p>}
                     {groupPosts.map((p) => (
-                      <div key={p.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                        <div className="flex items-center gap-2"><div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-xs font-bold text-white">{p.user[0]}</div><span className="text-sm font-bold text-slate-200">{p.user}</span></div>
-                        <p className="text-sm text-slate-300">{p.text}</p>
+                      <div key={p.id} className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-2.5">
+                        <div className="flex items-center gap-2.5"><div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-xs font-bold text-white shrink-0">{p.user[0]}</div><span className="text-sm font-bold text-gray-900">{p.user}</span></div>
+                        {p.text && <p className="text-sm text-gray-800 leading-relaxed">{p.text}</p>}
                         {p.media_url && p.media_type === 'video' && <video src={p.media_url} controls className="rounded-xl max-h-80 w-full object-cover" />}
                         {p.media_url && p.media_type === 'voice' && <audio src={p.media_url} controls className="w-full" />}
                         {p.media_url && (p.media_type === 'image' || p.media_type === 'gif') && <img src={p.media_url} alt="post media" className="rounded-xl max-h-80 w-full object-cover" />}
                         {Object.keys(p.reactions).length > 0 && (
-                          <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[10px] font-bold bg-slate-800 px-2 py-1 rounded-lg text-slate-300">{r ? r.icon : ''} {count}</span>; })}</div>
+                          <div className="flex flex-wrap gap-1.5">{Object.entries(p.reactions).map(([rid, count]) => { const r = REACTIONS.find((x) => x.id === rid); return <span key={rid} className="text-[11px] font-bold bg-gray-100 px-2 py-1 rounded-full text-gray-600">{r ? r.icon : ''} {count}</span>; })}</div>
                         )}
+                        <div className="h-px bg-gray-100" />
                         <div className="flex items-center justify-between flex-wrap gap-2">
                           <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addPostReaction(p.id, r.id)} className="text-base hover:scale-125 transition-transform">{r.icon}</button>))}</div>
-                          <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</button>
+                          <button onClick={() => toggleCommentsFor(p.id)} className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg"><MessageSquare className="w-3.5 h-3.5" /> {p.comments}</button>
                         </div>
                         {openCommentsFor === p.id && (
-                          <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
+                          <div className="pt-3 border-t border-gray-100 space-y-3">
                             {(commentsByPost[p.id] || []).map((c) => (
-                              <div key={c.id} className="bg-slate-950 border border-slate-800 rounded-xl p-3 space-y-1.5">
-                                <div className="flex items-center gap-2"><div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center text-[10px] font-bold text-white">{c.author_name[0]}</div><span className="text-xs font-bold text-slate-200">{c.author_name}</span></div>
-                                {c.text && <p className="text-xs text-slate-300">{c.text}</p>}
-                                {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
-                                {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
-                                {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
-                                <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                              <div key={c.id} className="flex gap-2">
+                                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-[10px] font-bold text-white shrink-0">{c.author_name[0]}</div>
+                                <div className="bg-gray-100 rounded-2xl px-3 py-2 space-y-1.5 flex-1">
+                                  <span className="text-xs font-bold text-gray-900">{c.author_name}</span>
+                                  {c.text && <p className="text-xs text-gray-800">{c.text}</p>}
+                                  {c.media_url && c.media_type === 'video' && <video src={c.media_url} controls className="rounded-lg max-h-52 w-full object-cover" />}
+                                  {c.media_url && c.media_type === 'voice' && <audio src={c.media_url} controls className="w-full" />}
+                                  {c.media_url && (c.media_type === 'image' || c.media_type === 'gif') && <img src={c.media_url} alt="comment media" className="rounded-lg max-h-52 w-full object-cover" />}
+                                  <div className="flex flex-wrap gap-1">{REACTIONS.map((r) => (<button key={r.id} title={r.label} onClick={() => addCommentReaction(p.id, c.id, r.id)} className="text-xs hover:scale-125 transition-transform">{r.icon}</button>))}</div>
+                                </div>
                               </div>
                             ))}
                             <div className="flex items-center gap-2">
-                              <input value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs" />
-                              <button onClick={() => submitComment(p.id)} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-bold px-3 py-2 rounded-xl">Send</button>
+                              <input value={commentDraft} onChange={(e) => setCommentDraft(e.target.value)} placeholder="Write a comment..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                              <button onClick={() => submitComment(p.id)} className="bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold px-3 py-2 rounded-lg">Send</button>
                             </div>
                           </div>
                         )}
@@ -2373,14 +2382,14 @@ export default function App() {
               )}
 
               {groupView === 'chat' && (
-                <div className="bg-slate-900 border border-slate-800 rounded-3xl flex flex-col h-[520px]">
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm flex flex-col h-[520px]">
                   <div ref={groupChatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
-                    {groupChatMessages.length === 0 && <p className="text-xs text-slate-500 text-center py-6">No messages yet — say hi to the group.</p>}
+                    {groupChatMessages.length === 0 && <p className="text-xs text-gray-400 text-center py-6">No messages yet — say hi to the group.</p>}
                     {groupChatMessages.map((msg) => {
                       const mine = msg.sender_id === session?.user?.id;
                       return (
                         <div key={msg.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1 ${mine ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white' : 'bg-slate-800 text-slate-200'}`}>
+                          <div className={`max-w-[75%] rounded-2xl px-3.5 py-2.5 space-y-1 ${mine ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-900'}`}>
                             {!mine && <p className="text-[10px] font-bold opacity-70">{msg.sender_name}</p>}
                             {msg.text && <p className="text-sm">{msg.text}</p>}
                             {msg.media_url && msg.media_type === 'video' && <video src={msg.media_url} controls className="rounded-xl max-h-64 w-full object-cover" />}
@@ -2391,25 +2400,25 @@ export default function App() {
                       );
                     })}
                   </div>
-                  <div className="p-3 border-t border-slate-800">
+                  <div className="p-3 border-t border-gray-100">
                     <input ref={groupChatFileRef} type="file" accept="image/*,video/*,audio/*" className="hidden" onChange={handleGroupChatFileSelect} />
                     <div className="flex items-center gap-2">
-                      <input value={groupChatDraft} onChange={(e) => setGroupChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendGroupChatMessage(); }} placeholder="Message the group..." className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm" />
-                      <button onClick={() => groupChatFileRef.current?.click()} disabled={groupChatUploading} className="bg-slate-800 border border-slate-700 text-slate-300 p-2.5 rounded-xl disabled:opacity-50"><Camera className="w-4 h-4" /></button>
-                      <button onClick={() => recordingFor === 'groupchat' ? stopVoiceRecording('groupchat') : startVoiceRecording('groupchat')} className={`p-2.5 rounded-xl border ${recordingFor === 'groupchat' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}><Mic className="w-4 h-4" /></button>
-                      <button onClick={() => sendGroupChatMessage()} className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2.5 rounded-xl"><Send className="w-4 h-4" /></button>
+                      <input value={groupChatDraft} onChange={(e) => setGroupChatDraft(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') sendGroupChatMessage(); }} placeholder="Message the group..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                      <button onClick={() => groupChatFileRef.current?.click()} disabled={groupChatUploading} className="bg-gray-100 hover:bg-gray-200 text-gray-600 p-2.5 rounded-xl disabled:opacity-50"><Camera className="w-4 h-4" /></button>
+                      <button onClick={() => recordingFor === 'groupchat' ? stopVoiceRecording('groupchat') : startVoiceRecording('groupchat')} className={`p-2.5 rounded-xl ${recordingFor === 'groupchat' ? 'bg-rose-600 text-white animate-pulse' : 'bg-gray-100 hover:bg-gray-200 text-gray-600'}`}><Mic className="w-4 h-4" /></button>
+                      <button onClick={() => sendGroupChatMessage()} className="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-xl"><Send className="w-4 h-4" /></button>
                     </div>
                   </div>
                 </div>
               )}
 
               {groupView === 'requests' && isAdmin && (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
-                  {groupJoinRequests.length === 0 && <p className="text-xs text-slate-500 text-center py-4">No pending requests.</p>}
+                <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-4 space-y-2">
+                  {groupJoinRequests.length === 0 && <p className="text-xs text-gray-400 text-center py-4">No pending requests.</p>}
                   {groupJoinRequests.map((r) => (
-                    <div key={r.id} className="flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl p-3">
-                      <span className="text-sm font-bold text-slate-200">{r.profiles?.name || 'Someone'}</span>
-                      <button onClick={() => approveGroupRequest(r.id, activeGroupId)} className="bg-purple-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button>
+                    <div key={r.id} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl p-3">
+                      <span className="text-sm font-bold text-gray-900">{r.profiles?.name || 'Someone'}</span>
+                      <button onClick={() => approveGroupRequest(r.id, activeGroupId)} className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg">Approve</button>
                     </div>
                   ))}
                 </div>
