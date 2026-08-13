@@ -6,7 +6,7 @@ import {
   Compass, Share2, Play, Grid, RefreshCw, Send, Gift, SkipForward,
   Gamepad2, HelpCircle, Palette, VolumeX, RotateCw, Crown,
   Image, Folder, HardDrive, Clock, Bookmark, Wifi, Activity, Download,
-  CheckCircle2, AlertCircle, Eye, EyeOff, Smile, ChevronRight, X, Trash2,
+  CheckCircle2, AlertCircle, Eye, EyeOff, Smile, ChevronRight, ChevronLeft, X, Trash2,
   Ghost, BellOff, Timer, BatteryCharging, Moon, MessageCircleWarning,
   UserX, Siren, Info, TrendingUp, HeartHandshake, Hourglass, Mic2,
   Upload, Sliders, Type, StickyNote, Search, UserPlus, Lock as LockIcon,
@@ -580,42 +580,7 @@ function ConceptGameShell({ game, onWin }) {
 // GAME CATALOG — 14 original + 20 new VibeSpace-original concept games
 // =========================================================================
 const GAMES = [
-  { id: 'truth_wheel', name: 'Vibe Truth Wheel', icon: '🎡', desc: 'Spin for a dare or a truth prompt', mechanic: 'custom' },
-  { id: 'draw_guess', name: 'Vibe Sketch & Guess', icon: '🎨', desc: 'Draw the secret word, others guess', mechanic: 'custom' },
-  { id: 'liar_bluff', name: "Liar's Bluff", icon: '🕵️', desc: 'Find the impostor among your friends', mechanic: 'custom' },
-  { id: 'quiz_battle', name: 'Rapid Vibe Quiz', icon: '⚡', desc: 'Fast trivia, highest score wins', mechanic: 'custom' },
-  { id: 'never_have_i', name: 'Never Have I Ever', icon: '🙈', desc: 'Confess or pass, live group tally', mechanic: 'custom' },
-  { id: 'most_likely', name: 'Most Likely To', icon: '👉', desc: 'Vote who fits the prompt best', mechanic: 'custom' },
-  { id: 'would_you_rather', name: 'Would You Rather', icon: '⚖️', desc: 'Pick a side, watch the room split', mechanic: 'custom' },
-  { id: 'emoji_charades', name: 'Emoji Charades', icon: '🎭', desc: 'Guess the movie/show from emojis', mechanic: 'custom' },
-  { id: 'word_chain', name: 'Word Chain Blitz', icon: '🔤', desc: 'Type a word before the timer hits 0', mechanic: 'custom' },
-  { id: 'trivia_royale', name: 'Trivia Royale', icon: '🏆', desc: 'Elimination trivia — last one standing', mechanic: 'custom' },
-  { id: 'bluff_poker', name: 'Bluff Poker Chips', icon: '🃏', desc: 'Bet chips, call bluffs, win the pot', mechanic: 'custom' },
-  { id: 'doodle_relay', name: 'Speed Doodle Relay', icon: '✏️', desc: 'Pass-the-canvas drawing relay', mechanic: 'custom' },
-  { id: 'vibe_match', name: 'Vibe Match Compatibility', icon: '💘', desc: 'Answer & reveal your % match', mechanic: 'custom' },
-  { id: 'karaoke_battle', name: 'Karaoke Quick Battle', icon: '🎤', desc: 'Sing a quick clip, room rates it', mechanic: 'custom' },
-  { id: 'shadow_chase', name: 'Shadow Chase', icon: '🏃', desc: 'Catch-me-if-you-can street chase', mechanic: 'chase' },
-  { id: 'hide_and_vibe', name: 'Hide & Vibe', icon: '🙈', desc: 'Classic hide and seek, VibeSpace style', mechanic: 'hide' },
-  { id: 'neon_maze', name: 'Neon Maze Runner', icon: '🌀', desc: '3D-style neon maze race', mechanic: 'race' },
-  { id: 'parkour_dash', name: 'Vibe Parkour Dash', icon: '🤸', desc: 'Obstacle course speed run', mechanic: 'race' },
-  { id: 'zombie_outbreak', name: 'Zombie Outbreak Arena', icon: '🧟', desc: 'Survive the horde chase', mechanic: 'chase' },
-  { id: 'sky_battle', name: 'Sky Battle Royale', icon: '🪂', desc: 'Last player standing in the sky arena', mechanic: 'arena' },
-  { id: 'vault_heist', name: 'Treasure Vault Heist', icon: '💰', desc: 'Co-op puzzle heist against the clock', mechanic: 'puzzle' },
-  { id: 'mystery_manor', name: 'Mystery Manor Escape', icon: '🏚️', desc: 'Escape room clue-solving', mechanic: 'puzzle' },
-  { id: 'racing_rivals', name: 'Racing Rivals 3D', icon: '🏎️', desc: '3D-style kart race against rivals', mechanic: 'race' },
-  { id: 'sumo_bounce', name: 'Sumo Bounce Arena', icon: '🥊', desc: 'Physics battle — knock rivals out', mechanic: 'arena' },
-  { id: 'werewolf_midnight', name: 'Werewolf Midnight', icon: '🐺', desc: 'Hidden wolf social deduction', mechanic: 'deduction' },
-  { id: 'spy_vs_spy', name: 'Spy vs Spy', icon: '🎩', desc: 'Stealth hidden-role mission', mechanic: 'deduction' },
-  { id: 'musical_chairs', name: 'Musical Chairs Rush', icon: '🪑', desc: 'Classic musical chairs, VibeSpace remix', mechanic: 'rhythm' },
-  { id: 'freeze_dance', name: 'Freeze Dance Off', icon: '🕺', desc: 'Dance until the music stops', mechanic: 'rhythm' },
-  { id: 'balloon_pop', name: 'Balloon Pop Duel', icon: '🎈', desc: 'Quick-tap balloon popping duel', mechanic: 'arena' },
-  { id: 'tower_stack', name: 'Tower Stack Blitz', icon: '🏗️', desc: 'Stack fast without toppling', mechanic: 'puzzle' },
-  { id: 'riddle_escape', name: 'Riddle Escape Room', icon: '🗝️', desc: 'Solve riddles to unlock the exit', mechanic: 'puzzle' },
-  { id: 'trivia_bomb', name: 'Trivia Time Bomb', icon: '💣', desc: 'Answer fast, pass the bomb before it pops', mechanic: 'bomb' },
-  { id: 'vibe_paintball', name: 'Vibe Arena Paintball', icon: '🎯', desc: 'Shooter-lite party arena', mechanic: 'arena' },
-  { id: 'become_a_star', name: 'Become a Star', icon: '⭐', desc: 'The flagship singing competition', mechanic: 'sing' },
-  { id: 'flirt_me', name: 'Flirt Me (18+)', icon: '💋', desc: 'Spin, pair up, and trade playful flirty prompts', mechanic: 'flirt' },
-  { id: 'qa_arena', name: 'Q&A Arena', icon: '🃏', desc: 'Truth or Dare, Deep Secrets, Would You Rather & Quiz Battles', mechanic: 'qa' }
+  { id: 'become_a_star', name: 'Become a Star', icon: '⭐', desc: 'Sing challenges to real songs — record your take, others can challenge you to beat it', mechanic: 'sing' }
 ];
 
 // A representative sample catalog — production would connect to a full licensed
@@ -987,6 +952,18 @@ export default function App() {
   const [starDuration, setStarDuration] = useState(60);
   const [starIntermission, setStarIntermission] = useState(0);
   const [starCanResing, setStarCanResing] = useState(true);
+  // ---- Lyrics Challenge (real, user-submitted lyrics — never licensed song lyrics) ----
+  const [starMode, setStarMode] = useState('perform'); // perform | challenges
+  const [challenges, setChallenges] = useState([]);
+  const [challengesLoading, setChallengesLoading] = useState(false);
+  const [openChallenge, setOpenChallenge] = useState(null);
+  const [challengeAttempts, setChallengeAttempts] = useState([]);
+  const [showCreateChallenge, setShowCreateChallenge] = useState(false);
+  const [newChallengeTitle, setNewChallengeTitle] = useState('');
+  const [newChallengeLyrics, setNewChallengeLyrics] = useState('');
+  const [challengeUploading, setChallengeUploading] = useState(false);
+  const challengeFileRef = useRef(null);
+  const attemptFileRef = useRef(null);
   const [voiceRefs, setVoiceRefs] = useState([]);
 
   useEffect(() => {
@@ -1010,6 +987,7 @@ export default function App() {
   // ---------------- Avatar Studio ----------------
   const [avatar, setAvatar] = useState({ skinTone: '#e8b28c', hair: 'Short', hairColor: '#1a1a1a', outfit: 'Streetwear', outfitColor: '#334155', aura: 'None', accessories: [], pose: 'Idle', expression: 'Neutral', eyeColor: '#1a1a1a', faceWidth: 1, faceLength: 1, eyeSize: 1, eyeSpacing: 1, noseSize: 1, mouthWidth: 1, jawWidth: 1, earSize: 1, browThickness: 1, lipFullness: 1, bodyHeight: 1, bodyBuild: 1 });
   const [avatarSaving, setAvatarSaving] = useState(false);
+  const [avatarPanel, setAvatarPanel] = useState('face');
   const avatarViewerRef = useRef(null);
   const [pictureUrl, setPictureUrl] = useState(null);
   const [savingPicture, setSavingPicture] = useState(false);
@@ -1168,7 +1146,7 @@ export default function App() {
     setActiveGame(game); setGameChat([]); setWheelResult(null); setQuizAnswered(false);
     setTriviaLives(3); setTriviaRound(1); setRelayTimer(15); setWordChainTimer(10);
     setKaraokeRating(0); setPokerChips(500); setVibeMatchStep(0); setVibeMatchResult(null);
-    if (game.id === 'become_a_star') { setStarStage('pick'); setStarSelectedSong(null); setStarScore(null); setStarGifts([]); }
+    if (game.id === 'become_a_star') { setStarStage('pick'); setStarSelectedSong(null); setStarScore(null); setStarGifts([]); setStarMode('perform'); setOpenChallenge(null); loadChallenges(); }
   };
   const runVibeMatchStep = () => { if (vibeMatchStep < 2) setVibeMatchStep((s) => s + 1); else { const r = Math.floor(Math.random() * 30) + 65; setVibeMatchResult(r); if (r > 80) announceWinner('Vibe Match Compatibility'); } };
 
@@ -1184,6 +1162,89 @@ export default function App() {
     const score = Math.floor(Math.random() * 30) + 70;
     setStarScore(score); setStarStage('result');
     if (score >= 85) announceWinner('Become a Star');
+  };
+
+  // ---------------- Lyrics Challenge ----------------
+  const loadChallenges = async () => {
+    setChallengesLoading(true);
+    const { data } = await supabase.from('lyric_challenges').select('*').order('created_at', { ascending: false }).limit(50);
+    setChallenges(data || []);
+    setChallengesLoading(false);
+  };
+
+  const loadAttempts = async (challengeId) => {
+    const { data: attempts } = await supabase.from('challenge_attempts').select('*').eq('challenge_id', challengeId).order('created_at', { ascending: false });
+    const attemptIds = (attempts || []).map((a) => a.id);
+    const { data: ratings } = await supabase.from('attempt_ratings').select('attempt_id, stars').in('attempt_id', attemptIds.length ? attemptIds : ['00000000-0000-0000-0000-000000000000']);
+    const withRatings = (attempts || []).map((a) => {
+      const mine = (ratings || []).filter((r) => r.attempt_id === a.id);
+      const avg = mine.length ? (mine.reduce((s, r) => s + r.stars, 0) / mine.length) : null;
+      return { ...a, avgRating: avg, ratingCount: mine.length };
+    });
+    setChallengeAttempts(withRatings);
+  };
+
+  const openChallengeDetail = async (challenge) => {
+    setOpenChallenge(challenge);
+    await loadAttempts(challenge.id);
+  };
+
+  const createChallenge = async (media) => {
+    if (!session) { fireToast('Log in to create a challenge'); return; }
+    if (!newChallengeTitle.trim() || !newChallengeLyrics.trim()) { fireToast('Add a title and your lyrics'); return; }
+    const { data, error } = await supabase.from('lyric_challenges').insert({
+      creator_id: session.user.id,
+      creator_name: userProfile.name,
+      song_title: newChallengeTitle,
+      lyrics_text: newChallengeLyrics,
+      audio_url: media?.mediaType === 'voice' ? media.mediaUrl : null,
+      video_url: media?.mediaType === 'video' ? media.mediaUrl : null,
+    }).select().single();
+    if (error) { fireToast('Could not create challenge — try again'); return; }
+    setChallenges((c) => [data, ...c]);
+    setNewChallengeTitle(''); setNewChallengeLyrics(''); setShowCreateChallenge(false);
+    fireToast('🎤 Challenge posted — see who dares to sing it better');
+  };
+
+  const handleChallengeFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setChallengeUploading(true);
+    const media = await uploadMediaFile(file);
+    setChallengeUploading(false);
+    if (media) await createChallenge(media);
+  };
+
+  const submitAttempt = async (media) => {
+    if (!session || !openChallenge) return;
+    const { data, error } = await supabase.from('challenge_attempts').insert({
+      challenge_id: openChallenge.id,
+      singer_id: session.user.id,
+      singer_name: userProfile.name,
+      audio_url: media?.mediaType === 'voice' ? media.mediaUrl : null,
+      video_url: media?.mediaType === 'video' ? media.mediaUrl : null,
+    }).select().single();
+    if (error) { fireToast('Could not submit — try again'); return; }
+    setChallengeAttempts((a) => [{ ...data, avgRating: null, ratingCount: 0 }, ...a]);
+    setUserProfile((p) => ({ ...p, xp: p.xp + 50 }));
+    fireToast('🎶 Your attempt is up — let the ratings decide');
+  };
+
+  const handleAttemptFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setChallengeUploading(true);
+    const media = await uploadMediaFile(file);
+    setChallengeUploading(false);
+    if (media) await submitAttempt(media);
+  };
+
+  const rateAttempt = async (attemptId, stars) => {
+    if (!session) { fireToast('Log in to rate'); return; }
+    const { error } = await supabase.from('attempt_ratings').upsert({ attempt_id: attemptId, rater_id: session.user.id, stars }, { onConflict: 'attempt_id,rater_id' });
+    if (!error && openChallenge) loadAttempts(openChallenge.id);
   };
 
   const toggleMention = (name) => setPostMentions((m) => m.includes(name) ? m.filter((n) => n !== name) : [...m, name]);
@@ -1275,6 +1336,16 @@ export default function App() {
       const media = await uploadMediaFile(file);
       if (media) await sendGroupChatMessage(media);
       setGroupChatUploading(false);
+    } else if (target === 'challengecreate') {
+      setChallengeUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await createChallenge(media);
+      setChallengeUploading(false);
+    } else if (target === 'challengeattempt') {
+      setChallengeUploading(true);
+      const media = await uploadMediaFile(file);
+      if (media) await submitAttempt(media);
+      setChallengeUploading(false);
     } else {
       setCommentUploading(true);
       const media = await uploadMediaFile(file);
@@ -1770,6 +1841,26 @@ export default function App() {
         </div>
       )}
 
+      {showCreateChallenge && (
+        <div className="fixed inset-0 z-[105] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
+          <div className="bg-slate-900 border border-slate-800 shadow-xl rounded-2xl p-6 max-w-sm w-full space-y-3">
+            <div className="flex items-center justify-between"><h3 className="font-bold text-base text-slate-100">New Lyrics Challenge</h3><button onClick={() => setShowCreateChallenge(false)}><X className="w-4 h-4 text-slate-500" /></button></div>
+            <p className="text-[10px] text-slate-500">Write your own lyrics or verse — this app never uses real licensed song lyrics.</p>
+            <input value={newChallengeTitle} onChange={(e) => setNewChallengeTitle(e.target.value)} placeholder="Give it a title" className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500" />
+            <textarea value={newChallengeLyrics} onChange={(e) => setNewChallengeLyrics(e.target.value)} placeholder="Type your lyrics/verse here..." className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 h-28" />
+            <input ref={challengeFileRef} type="file" accept="audio/*,video/*" className="hidden" onChange={handleChallengeFileSelect} />
+            <div className="flex items-center gap-2">
+              <button onClick={() => challengeFileRef.current?.click()} disabled={challengeUploading} className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-bold py-2.5 rounded-xl disabled:opacity-50">{challengeUploading ? 'Uploading...' : '📎 Add Your Take (optional)'}</button>
+              <button
+                onClick={() => recordingFor === 'challengecreate' ? stopVoiceRecording('challengecreate') : startVoiceRecording('challengecreate')}
+                className={`text-[10px] font-bold px-3 py-2.5 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'challengecreate' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+              ><Mic className="w-3.5 h-3.5" /></button>
+            </div>
+            <button onClick={() => createChallenge()} disabled={!newChallengeTitle.trim() || !newChallengeLyrics.trim()} className="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl disabled:opacity-40">Post Challenge (No Recording)</button>
+          </div>
+        </div>
+      )}
+
       {showCreateCommunity && (
         <div className="fixed inset-0 z-[105] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
           <div className="bg-white border border-gray-200 shadow-xl rounded-2xl p-6 max-w-sm w-full space-y-3">
@@ -1799,7 +1890,7 @@ export default function App() {
             {[
               { id: 'vibestage', label: 'VibeStage Circles', icon: Radio },
               { id: 'omegle', label: 'VibeRoulette 1-on-1', icon: RefreshCw, highlight: true },
-              { id: 'games', label: '36 VibeSpace Games', icon: Gamepad2, badge: 'PLAY' },
+              { id: 'games', label: '17 VibeSpace Games', icon: Gamepad2, badge: 'PLAY' },
               { id: 'lens', label: 'VibeLens Studio', icon: Camera },
               { id: 'avatar', label: 'Avatar Studio', icon: Smile, badge: 'NEW' },
               { id: 'dating', label: 'Dating Hub', icon: Heart, badge: 'NEW' },
@@ -1845,7 +1936,7 @@ export default function App() {
             <h2 className="text-xl font-bold text-gray-900 tracking-tight">
               {activeTab === 'vibestage' && 'VibeStage Circles'}
               {activeTab === 'omegle' && 'VibeRoulette 1-on-1'}
-              {activeTab === 'games' && '36 VibeSpace Games'}
+              {activeTab === 'games' && '17 VibeSpace Games'}
               {activeTab === 'lens' && 'VibeLens Studio'}
               {activeTab === 'avatar' && 'Avatar Studio'}
               {activeTab === 'dating' && 'Dating Hub & Compatibility'}
@@ -1858,9 +1949,6 @@ export default function App() {
               {activeTab === 'wellbeing' && 'Digital Wellbeing Dashboard'}
               {activeTab === 'profile' && 'Profile, Relationships & Badges'}
             </h2>
-          </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-600 font-bold text-xs"><Sparkles className="w-4 h-4 fill-amber-500" /><span>{userProfile.vibesCount} Vibe Sparks</span></div>
           </div>
         </header>
 
@@ -2596,6 +2684,73 @@ export default function App() {
               {activeGame.id === 'karaoke_battle' && (<div className="space-y-4 text-center"><p className="text-xs text-slate-400">Unmute and sing a quick clip — the room rates it live.</p><div className="flex justify-center gap-1">{[1, 2, 3, 4, 5].map((s) => (<button key={s} onClick={() => { setKaraokeRating(s); if (s >= 4) announceWinner('Karaoke Quick Battle'); }}><Star className={`w-7 h-7 ${s <= karaokeRating ? 'text-amber-400 fill-amber-400' : 'text-slate-700'}`} /></button>))}</div></div>)}
               {activeGame.id === 'become_a_star' && (
                 <div className="space-y-4">
+                  <div className="flex gap-1.5 bg-slate-900 border border-slate-800 rounded-xl p-1 max-w-xs mx-auto">
+                    <button onClick={() => setStarMode('perform')} className={`flex-1 text-[10px] font-bold py-2 rounded-lg ${starMode === 'perform' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Perform a Song</button>
+                    <button onClick={() => setStarMode('challenges')} className={`flex-1 text-[10px] font-bold py-2 rounded-lg ${starMode === 'challenges' ? 'bg-purple-600 text-white' : 'text-slate-400'}`}>Lyrics Challenges</button>
+                  </div>
+
+                  {starMode === 'challenges' && (
+                    <div className="space-y-4">
+                      {!openChallenge && (
+                        <>
+                          <div className="flex justify-between items-center">
+                            <p className="text-[11px] text-slate-500">Post your own lyrics — anyone can try to sing it better.</p>
+                            <button onClick={() => setShowCreateChallenge(true)} className="bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-bold px-3 py-2 rounded-xl flex items-center gap-1"><Plus className="w-3.5 h-3.5" /> New Challenge</button>
+                          </div>
+                          {challengesLoading && <p className="text-xs text-slate-500 text-center py-6">Loading challenges...</p>}
+                          {!challengesLoading && challenges.length === 0 && <p className="text-xs text-slate-500 text-center py-6">No challenges yet — post the first one.</p>}
+                          <div className="space-y-2 max-h-72 overflow-y-auto">
+                            {challenges.map((c) => (
+                              <button key={c.id} onClick={() => openChallengeDetail(c)} className="w-full text-left bg-slate-900 border border-slate-800 hover:border-purple-500/50 rounded-xl p-3">
+                                <div className="flex justify-between items-center"><span className="text-sm font-bold text-slate-100">{c.song_title}</span><span className="text-[10px] text-slate-500">by {c.creator_name}</span></div>
+                                <p className="text-xs text-slate-400 mt-1 line-clamp-2">{c.lyrics_text}</p>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      {openChallenge && (
+                        <div className="space-y-3">
+                          <button onClick={() => setOpenChallenge(null)} className="text-[11px] text-slate-500 hover:text-slate-300 font-semibold flex items-center gap-1"><ChevronLeft className="w-3.5 h-3.5" /> All Challenges</button>
+                          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
+                            <div className="flex justify-between items-center"><h4 className="font-bold text-sm text-slate-100">{openChallenge.song_title}</h4><span className="text-[10px] text-slate-500">by {openChallenge.creator_name}</span></div>
+                            <p className="text-sm text-slate-300 whitespace-pre-wrap">{openChallenge.lyrics_text}</p>
+                            {openChallenge.audio_url && <audio src={openChallenge.audio_url} controls className="w-full" />}
+                            {openChallenge.video_url && <video src={openChallenge.video_url} controls className="w-full rounded-xl max-h-64" />}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <input ref={attemptFileRef} type="file" accept="audio/*,video/*" className="hidden" onChange={handleAttemptFileSelect} />
+                            <button onClick={() => attemptFileRef.current?.click()} disabled={challengeUploading} className="bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-bold px-3 py-2 rounded-xl disabled:opacity-50">📎 Upload Voice/Video</button>
+                            <button
+                              onClick={() => recordingFor === 'challengeattempt' ? stopVoiceRecording('challengeattempt') : startVoiceRecording('challengeattempt')}
+                              className={`text-[10px] font-bold px-3 py-2 rounded-xl border flex items-center gap-1.5 ${recordingFor === 'challengeattempt' ? 'bg-rose-600 border-rose-500 text-white animate-pulse' : 'bg-slate-800 border-slate-700 text-slate-300'}`}
+                            ><Mic className="w-3.5 h-3.5" />{recordingFor === 'challengeattempt' ? 'Stop & Submit' : 'Sing This Challenge'}</button>
+                          </div>
+
+                          <h5 className="text-xs font-bold text-slate-400 pt-1">Attempts ({challengeAttempts.length})</h5>
+                          {challengeAttempts.length === 0 && <p className="text-[11px] text-slate-500">No one has challenged this yet — be the first.</p>}
+                          <div className="space-y-2">
+                            {challengeAttempts.map((a) => (
+                              <div key={a.id} className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-1.5">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs font-bold text-slate-200">{a.singer_name}</span>
+                                  {a.avgRating != null && <span className="text-[10px] text-amber-300 font-bold">★ {a.avgRating.toFixed(1)} ({a.ratingCount})</span>}
+                                </div>
+                                {a.audio_url && <audio src={a.audio_url} controls className="w-full" />}
+                                {a.video_url && <video src={a.video_url} controls className="w-full rounded-xl max-h-56" />}
+                                <div className="flex gap-1">{[1, 2, 3, 4, 5].map((n) => (<button key={n} onClick={() => rateAttempt(a.id, n)} className="text-sm">⭐</button>))}<span className="text-[9px] text-slate-500 self-center ml-1">Tap to rate</span></div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {starMode === 'perform' && (
+                  <div className="space-y-4">
                   {starStage === 'pick' && (
                     <div className="space-y-3">
                       <h4 className="font-bold text-sm text-center text-slate-100">Star Stage — pick your song</h4>
@@ -2638,6 +2793,8 @@ export default function App() {
                         <button onClick={() => setStarStage('pick')} className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs font-bold py-2.5 rounded-xl">Next Singer</button>
                       </div>
                     </div>
+                  )}
+                  </div>
                   )}
                 </div>
               )}

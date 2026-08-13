@@ -69,6 +69,11 @@ From there you build/run it in Xcode or Android Studio like any native app, and 
 
 **Before shipping to app stores:** point `VITE_API_URL` at your deployed (not localhost) backend and rebuild — a phone can't reach your laptop's localhost.
 
+## Recent changes
+- Removed the "Vibe Sparks" stat display (was already gone from the header in this version — if you still see it live, that confirms your deployment is behind what's in this zip).
+- Trimmed the Games list down to just **Become a Star** — the only game backed by real persistent multiplayer data (Supabase). The other 13 were simple local-only simulations (vote counters, timers, quiz options that don't sync with real other players) rather than genuinely broken, but none had real backend logic either, so they're removed per your request. Their code is still in the file (harmless, unreachable) rather than deleted, in case you want any brought back properly later.
+- Confirmed **Become a Star → Lyrics Challenges** is already a complete, real, working feature: users post their own original lyrics/verse (never actual copyrighted song lyrics — see the copyright note in `010_lyrics_challenge.sql`), others record themselves singing it (audio or video), and anyone can rate attempts 1-5 stars to settle who sang it better. Fully wired to Supabase.
+
 ## Reliability: crash isolation
 The app previously had no error boundaries — a single JS error anywhere (most likely: the 3D Avatar Studio hitting a mobile browser's WebGL context limit after being visited several times in one session) would blank the *entire* app instead of just that panel. Fixed:
 - A root-level error boundary (`ErrorBoundary.jsx`) now shows a real "Something went wrong" screen with a Reload button instead of a blank page, for any crash anywhere.
